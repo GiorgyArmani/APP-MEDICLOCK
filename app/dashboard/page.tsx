@@ -1,0 +1,70 @@
+import { redirect } from "next/navigation"
+import { getCurrentDoctor } from "@/lib/actions/auth"
+import { getShiftsByDoctor, getShifts } from "@/lib/actions/shifts"
+import { StatsCards } from "@/components/dashboard/stats-cards"
+import { ShiftsList } from "@/components/dashboard/shifts-list"
+import { ShiftsCalendar } from "@/components/dashboard/shifts-calendar"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Calendar, List } from "lucide-react"
+import type { Doctor } from "@/lib/supabase/types"
+
+export default async function DashboardPage() {
+  const currentDoctor = await getCurrentDoctor()
+
+  if (!currentDoctor) {
+    redirect("/login")
+  }
+
+  // TypeScript now knows currentDoctor is Doctor (not null) after the check above
+  const doctor = currentDoctor as Doctor
+
+  // Fetch shifts based on role
+  const shifts = doctor.role === "administrator"
+    ? await getShifts()
+    : await getShiftsByDoctor(doctor.id)
+
+  // Filter shifts for role-based visibility
+  const visibleShifts = doctor.role === "administrator"
+    ? shifts
+    : shifts.filter(
+      (s) =>
+        s.doctor_id === doctor.id ||
+        (s.shift_type === "free" && s.assigned_to_pool?.includes(doctor.role))
+    )
+
+  return (
+    <div className="min-h-screen bg-slate-50">
+      <main className="container mx-auto px-4 py-8 space-y-8">
+        <div>
+          <h1 className="text-3xl font-bold text-slate-900 mb-2">
+            Bienvenido, Dr. {doctor.full_name.split(" ")[1] || doctor.full_name}
+          </h1>
+          <p className="text-slate-600">Gestiona tus guardias y horarios</p>
+        </div>
+
+        <StatsCards shifts={visibleShifts} />
+
+        <Tabs defaultValue="list" className="w-full">
+          <TabsList className="grid w-full max-w-md grid-cols-2">
+            <TabsTrigger value="list" className="flex items-center gap-2">
+              <List className="h-4 w-4" />
+              Lista
+            </TabsTrigger>
+            <TabsTrigger value="calendar" className="flex items-center gap-2">
+              <Calendar className="h-4 w-4" />
+              Calendario
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="list" className="mt-6">
+            <ShiftsList shifts={visibleShifts} currentDoctor={doctor} />
+          </TabsContent>
+
+          <TabsContent value="calendar" className="mt-6">
+            <ShiftsCalendar shifts={visibleShifts} />
+          </TabsContent>
+        </Tabs>
+      </main>
+    </div>
+  )
+}
