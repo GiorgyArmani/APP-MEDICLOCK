@@ -24,7 +24,7 @@ async function sendEmail(to: string, subject: string, html: string) {
 
   try {
     const info = await transporter.sendMail({
-      from: `"Tu Guardia" <${FROM_EMAIL}>`,
+      from: `"Medi Clock" <${FROM_EMAIL}>`,
       to,
       subject,
       html,
@@ -308,6 +308,70 @@ export async function sendFreeShiftAlert(
                 <div style="text-align: center;">
                   <a href="${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/dashboard" class="button">
                     Aceptar Guardia
+                  </a>
+                </div>
+              </div>
+              <div class="footer">
+                <p>Este es un correo automático de Tu Guardia.</p>
+              </div>
+            </div>
+          </body>
+        </html>
+      `
+  )
+}
+
+/**
+ * Send welcome email to new doctor
+ */
+export async function sendWelcomeEmail(
+  email: string,
+  fullName: string,
+  role: string
+) {
+  return await sendEmail(
+    email,
+    `Bienvenido a Tu Guardia, ${fullName}`,
+    `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta charset="utf-8">
+            <style>
+              body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; }
+              .container { max-width: 600px; margin: 0 auto; padding: 0; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+              .header { background: #2563eb; color: white; padding: 24px; text-align: center; }
+              .content { padding: 32px; background: #f8fafc; }
+              .welcome-box { background: white; padding: 24px; border-radius: 12px; border-bottom: 4px solid #2563eb; margin: 24px 0; text-align: center; }
+              .role-badge { background: #e0e7ff; color: #3730a3; padding: 4px 12px; border-radius: 16px; font-weight: 600; font-size: 14px; }
+              .button { display: inline-block; background: #2563eb; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: 600; margin-top: 8px; text-align: center; }
+              .footer { text-align: center; padding: 24px; color: #94a3b8; font-size: 13px; background: white; border-top: 1px solid #e2e8f0; }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <div class="header">
+                <h1 style="margin: 0; font-size: 24px;">👋 ¡Bienvenido a Tu Guardia!</h1>
+              </div>
+              <div class="content">
+                <p>Hola <strong>${fullName}</strong>,</p>
+                <p>Tu cuenta ha sido creada exitosamente. Ahora eres parte de nuestro sistema de gestión de guardias.</p>
+                
+                <div class="welcome-box">
+                  <p style="margin-bottom: 16px; font-size: 18px;">Tu rol asignado es:</p>
+                  <span class="role-badge">${role.toUpperCase()}</span>
+                </div>
+
+                <p>Con Tu Guardia podrás:</p>
+                <ul>
+                  <li>Ver tus guardias asignadas</li>
+                  <li>Recibir notificaciones de nuevas guardias</li>
+                  <li>Aceptar guardias libres disponibles para tu rol</li>
+                </ul>
+                
+                <div style="text-align: center; margin-top: 32px;">
+                  <a href="${process.env.NEXT_PUBLIC_SITE_URL || 'https://mediclock.click'}/login" class="button">
+                    Ingresar al Sistema
                   </a>
                 </div>
               </div>

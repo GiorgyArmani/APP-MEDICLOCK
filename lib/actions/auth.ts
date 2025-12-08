@@ -4,6 +4,7 @@ import { getSupabaseServerClient, getSupabaseAdminClient } from "@/lib/supabase/
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 import type { DoctorRole } from "@/lib/supabase/types"
+import { sendWelcomeEmail } from "@/lib/notifications/email"
 
 export async function signUp(formData: {
   email: string
@@ -45,6 +46,9 @@ export async function signUp(formData: {
   if (profileError) {
     return { error: profileError.message }
   }
+
+  // Send welcome email
+  await sendWelcomeEmail(formData.email, formData.fullName, formData.role)
 
   revalidatePath("/", "layout")
   redirect("/dashboard")
