@@ -1,4 +1,4 @@
-# Deployment Guide - Vercel + Supabase
+ra# Deployment Guide - Vercel + Supabase
 
 This guide will help you deploy MediClock to Vercel with Supabase as your database.
 

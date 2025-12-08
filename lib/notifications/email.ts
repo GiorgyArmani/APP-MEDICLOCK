@@ -81,7 +81,7 @@ export async function sendShiftAssignmentEmail(data: ShiftEmailData) {
               </div>
               <div class="content">
                 <p>Hola <strong>${data.doctorName}</strong>,</p>
-                <p>Se te ha asignado una nueva guardia en <strong>Tu Guardia</strong>. Por favor revisa los detalles a continuación:</p>
+                <p>Se te ha asignado una nueva guardia en <strong>Medi Clock</strong>. Por favor revisa los detalles a continuación:</p>
                 
                 <div class="shift-card">
                   <div class="detail-row">
@@ -110,12 +110,12 @@ export async function sendShiftAssignmentEmail(data: ShiftEmailData) {
                 
                 <div style="text-align: center;">
                   <a href="${process.env.NEXT_PUBLIC_SITE_URL || 'https://mediclock.click'}/dashboard" class="button">
-                    Ver en Tu Guardia
+                    Ver en Medi Clock
                   </a>
                 </div>
               </div>
               <div class="footer">
-                <p>Este es un correo automático de Tu Guardia. Por favor no respondas a este mensaje.</p>
+                <p>Este es un correo automático de Medi Clock. Por favor no respondas a este mensaje.</p>
               </div>
             </div>
           </body>
@@ -180,7 +180,7 @@ export async function sendShiftReminderEmail(data: ShiftEmailData) {
                 <p style="text-align: center; font-weight: 500;">¡Que tengas una excelente guardia!</p>
               </div>
               <div class="footer">
-                <p>Este es un correo automático de Tu Guardia.</p>
+                <p>Este es un correo automático de Medi Clock.</p>
               </div>
             </div>
           </body>
@@ -235,7 +235,7 @@ export async function sendStatusChangeEmail(
                 </div>
               </div>
               <div class="footer">
-                <p>Este es un correo automático de Tu Guardia.</p>
+                <p>Este es un correo automático de Medi Clock.</p>
               </div>
             </div>
           </body>
@@ -312,7 +312,7 @@ export async function sendFreeShiftAlert(
                 </div>
               </div>
               <div class="footer">
-                <p>Este es un correo automático de Tu Guardia.</p>
+                <p>Este es un correo automático de Medi Clock.</p>
               </div>
             </div>
           </body>
@@ -331,7 +331,7 @@ export async function sendWelcomeEmail(
 ) {
   return await sendEmail(
     email,
-    `Bienvenido a Tu Guardia, ${fullName}`,
+    `Bienvenido a Medi Clock, ${fullName}`,
     `
         <!DOCTYPE html>
         <html>
@@ -351,7 +351,7 @@ export async function sendWelcomeEmail(
           <body>
             <div class="container">
               <div class="header">
-                <h1 style="margin: 0; font-size: 24px;">👋 ¡Bienvenido a Tu Guardia!</h1>
+                <h1 style="margin: 0; font-size: 24px;">👋 ¡Bienvenido a Medi Clock!</h1>
               </div>
               <div class="content">
                 <p>Hola <strong>${fullName}</strong>,</p>
@@ -362,7 +362,7 @@ export async function sendWelcomeEmail(
                   <span class="role-badge">${role.toUpperCase()}</span>
                 </div>
 
-                <p>Con Tu Guardia podrás:</p>
+                <p>Con Medi Clock podrás:</p>
                 <ul>
                   <li>Ver tus guardias asignadas</li>
                   <li>Recibir notificaciones de nuevas guardias</li>
@@ -376,7 +376,7 @@ export async function sendWelcomeEmail(
                 </div>
               </div>
               <div class="footer">
-                <p>Este es un correo automático de Tu Guardia.</p>
+                <p>Este es un correo automático de Medi Clock.</p>
               </div>
             </div>
           </body>

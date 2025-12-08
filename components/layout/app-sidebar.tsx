@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import Image from "next/image"
 import { usePathname } from "next/navigation"
 import { signOut } from "@/lib/actions/auth"
 import type { Doctor } from "@/lib/supabase/types"
@@ -63,10 +64,16 @@ export function AppSidebar({ doctor }: AppSidebarProps) {
                 <div className="p-6 border-b border-slate-800">
                     <div className="flex items-center gap-3 mb-4">
                         <div className="bg-blue-600 p-2 rounded-lg">
-                            <Calendar className="h-6 w-6" />
+                            <Image
+                                src="/logo.png"
+                                alt="Medi Clock Logo"
+                                width={24}
+                                height={24}
+                                className="h-6 w-6 text-white"
+                            />
                         </div>
                         <div>
-                            <h2 className="font-bold text-lg">MediClock</h2>
+                            <h2 className="font-bold text-lg">Medi Clock</h2>
                             <p className="text-xs text-slate-400">Gestión de Guardias</p>
                         </div>
                     </div>
