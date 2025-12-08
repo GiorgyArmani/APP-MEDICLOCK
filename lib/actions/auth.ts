@@ -13,19 +13,21 @@ export async function signUp(formData: {
   phoneNumber: string
   role: DoctorRole
 }) {
+  const adminSupabase = await getSupabaseAdminClient()
   const supabase = await getSupabaseServerClient()
 
-  // Sign up the user
-  const { data: authData, error: authError } = await supabase.auth.signUp({
+  // 1. Create user with Admin API (Auto-confirm email)
+  const { data: authData, error: authError } = await adminSupabase.auth.admin.createUser({
     email: formData.email,
     password: formData.password,
-    options: {
-      emailRedirectTo:
-        process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL || `${process.env.NEXT_PUBLIC_SITE_URL}/dashboard`,
+    email_confirm: true, // Auto-confirm the user
+    user_metadata: {
+      full_name: formData.fullName,
     },
   })
 
   if (authError) {
+    console.error("Error creating user:", authError)
     return { error: authError.message }
   }
 
@@ -33,8 +35,7 @@ export async function signUp(formData: {
     return { error: "Failed to create user" }
   }
 
-  // Create doctor profile using admin client to bypass RLS
-  const adminSupabase = await getSupabaseAdminClient()
+  // 2. Create doctor profile
   const { error: profileError } = await adminSupabase.from("doctors").insert({
     id: authData.user.id,
     email: formData.email,
@@ -44,10 +45,24 @@ export async function signUp(formData: {
   })
 
   if (profileError) {
+    console.error("Error creating profile:", profileError)
+    // Optional: Delete the auth user if profile creation fails?
+    // await adminSupabase.auth.admin.deleteUser(authData.user.id)
     return { error: profileError.message }
   }
 
-  // Send welcome email
+  // 3. Immediately Sign In the user to establish a session
+  const { error: signInError } = await supabase.auth.signInWithPassword({
+    email: formData.email,
+    password: formData.password,
+  })
+
+  if (signInError) {
+    console.error("Error signing in after signup:", signInError)
+    return { error: "Account created but failed to sign in. Please try logging in." }
+  }
+
+  // 4. Send custom welcome email
   await sendWelcomeEmail(formData.email, formData.fullName, formData.role)
 
   revalidatePath("/", "layout")
