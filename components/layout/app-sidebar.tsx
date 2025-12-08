@@ -46,9 +46,10 @@ export function AppSidebar({ doctor }: AppSidebarProps) {
             {/* Mobile menu button */}
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-white rounded-lg shadow-md"
+                className="lg:hidden fixed top-4 left-4 z-50 p-2.5 bg-white rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 border border-slate-200"
+                aria-label="Toggle menu"
             >
-                <Menu className="h-6 w-6" />
+                <Menu className="h-6 w-6 text-slate-900" />
             </button>
 
             {/* Sidebar */}

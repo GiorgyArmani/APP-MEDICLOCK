@@ -9,18 +9,29 @@ import type { Doctor } from "@/lib/supabase/types"
 
 interface CreateShiftDialogProps {
     doctors: Doctor[]
+    variant?: "default" | "fab"
 }
 
-export function CreateShiftDialog({ doctors }: CreateShiftDialogProps) {
+export function CreateShiftDialog({ doctors, variant = "default" }: CreateShiftDialogProps) {
     const [open, setOpen] = useState(false)
 
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-                <Button className="gap-2">
-                    <Plus className="h-4 w-4" />
-                    Nueva Guardia
-                </Button>
+                {variant === "fab" ? (
+                    <Button
+                        size="lg"
+                        className="h-14 w-14 rounded-full shadow-lg hover:shadow-xl transition-shadow"
+                    >
+                        <Plus className="h-6 w-6" />
+                        <span className="sr-only">Nueva Guardia</span>
+                    </Button>
+                ) : (
+                    <Button className="gap-2">
+                        <Plus className="h-4 w-4" />
+                        Nueva Guardia
+                    </Button>
+                )}
             </DialogTrigger>
             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>

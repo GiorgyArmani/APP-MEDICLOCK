@@ -34,7 +34,7 @@ export default async function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <main className="container mx-auto px-4 py-8 space-y-8">
+      <main className="container mx-auto px-4 py-8 space-y-8 pt-20 lg:pt-8">
         <div>
           <h1 className="text-3xl font-bold text-slate-900 mb-2">
             Bienvenido, Dr. {doctor.full_name.split(" ")[1] || doctor.full_name}

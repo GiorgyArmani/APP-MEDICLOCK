@@ -18,28 +18,28 @@ export function StatsCards({ shifts }: StatsCardsProps) {
 
   const cards = [
     {
-      title: "Total Shifts",
+      title: "Total Guardias",
       value: stats.total,
       icon: Calendar,
       color: "text-blue-600",
       bgColor: "bg-blue-50",
     },
     {
-      title: "New Assigned",
+      title: "Nuevas Asignadas",
       value: stats.new,
       icon: Clock,
       color: "text-blue-600",
       bgColor: "bg-blue-50",
     },
     {
-      title: "Free Available",
+      title: "Libres Disponibles",
       value: stats.free,
       icon: Users,
       color: "text-cyan-600",
       bgColor: "bg-cyan-50",
     },
     {
-      title: "Confirmed",
+      title: "Confirmadas",
       value: stats.confirmed,
       icon: CheckCircle2,
       color: "text-green-600",

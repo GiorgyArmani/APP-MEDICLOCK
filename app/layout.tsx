@@ -15,8 +15,8 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: "MediClock - Doctor Shift Management",
-  description: "Manage doctor shifts with role-based access control",
+  title: "Tu Guardia - Gestión de Guardias Médicas",
+  description: "Gestiona las guardias médicas con control de acceso basado en roles",
   generator: "Next.js",
 }
 
@@ -26,7 +26,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased`}>
         {children}
         <Analytics />

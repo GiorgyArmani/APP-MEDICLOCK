@@ -1,7 +1,7 @@
 "use client"
 
 import type { Shift, Doctor } from "@/lib/supabase/types"
-import { ShiftCard } from "@/components/dashboard/shift-card"
+import { AdminShiftCard } from "./admin-shift-card"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
@@ -10,7 +10,7 @@ interface AdminShiftsListProps {
   doctors: Doctor[]
 }
 
-export function AdminShiftsList({ shifts }: AdminShiftsListProps) {
+export function AdminShiftsList({ shifts, doctors }: AdminShiftsListProps) {
 
   const newShifts = shifts.filter((s) => s.status === "new")
   const freeShifts = shifts.filter((s) => s.status === "free" || s.status === "free_pending")
@@ -25,7 +25,7 @@ export function AdminShiftsList({ shifts }: AdminShiftsListProps) {
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="all" className="w-full">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
             <TabsTrigger value="all">Todas ({shifts.length})</TabsTrigger>
             <TabsTrigger value="new">Nuevas ({newShifts.length})</TabsTrigger>
             <TabsTrigger value="free">Libres ({freeShifts.length})</TabsTrigger>
@@ -37,7 +37,7 @@ export function AdminShiftsList({ shifts }: AdminShiftsListProps) {
             {shifts.length === 0 ? (
               <p className="text-center text-slate-500 py-8">No hay guardias registradas</p>
             ) : (
-              shifts.map((shift) => <ShiftCard key={shift.id} shift={shift} doctorId={shift.doctor_id || ""} />)
+              shifts.map((shift) => <AdminShiftCard key={shift.id} shift={shift} doctors={doctors} />)
             )}
           </TabsContent>
 
@@ -45,7 +45,7 @@ export function AdminShiftsList({ shifts }: AdminShiftsListProps) {
             {newShifts.length === 0 ? (
               <p className="text-center text-slate-500 py-8">No hay guardias nuevas</p>
             ) : (
-              newShifts.map((shift) => <ShiftCard key={shift.id} shift={shift} doctorId={shift.doctor_id || ""} />)
+              newShifts.map((shift) => <AdminShiftCard key={shift.id} shift={shift} doctors={doctors} />)
             )}
           </TabsContent>
 
@@ -53,7 +53,7 @@ export function AdminShiftsList({ shifts }: AdminShiftsListProps) {
             {freeShifts.length === 0 ? (
               <p className="text-center text-slate-500 py-8">No hay guardias libres</p>
             ) : (
-              freeShifts.map((shift) => <ShiftCard key={shift.id} shift={shift} doctorId={shift.doctor_id || ""} />)
+              freeShifts.map((shift) => <AdminShiftCard key={shift.id} shift={shift} doctors={doctors} />)
             )}
           </TabsContent>
 
@@ -61,7 +61,7 @@ export function AdminShiftsList({ shifts }: AdminShiftsListProps) {
             {confirmedShifts.length === 0 ? (
               <p className="text-center text-slate-500 py-8">No hay guardias confirmadas</p>
             ) : (
-              confirmedShifts.map((shift) => <ShiftCard key={shift.id} shift={shift} doctorId={shift.doctor_id || ""} />)
+              confirmedShifts.map((shift) => <AdminShiftCard key={shift.id} shift={shift} doctors={doctors} />)
             )}
           </TabsContent>
 
@@ -69,7 +69,7 @@ export function AdminShiftsList({ shifts }: AdminShiftsListProps) {
             {rejectedShifts.length === 0 ? (
               <p className="text-center text-slate-500 py-8">No hay guardias rechazadas</p>
             ) : (
-              rejectedShifts.map((shift) => <ShiftCard key={shift.id} shift={shift} doctorId={shift.doctor_id || ""} />)
+              rejectedShifts.map((shift) => <AdminShiftCard key={shift.id} shift={shift} doctors={doctors} />)
             )}
           </TabsContent>
         </Tabs>

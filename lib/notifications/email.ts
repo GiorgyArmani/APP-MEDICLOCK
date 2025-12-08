@@ -1,33 +1,37 @@
 /**
- * Email notification service using Resend
+ * Email notification service using Nodemailer (Hostinger SMTP)
  */
 
-import { Resend } from 'resend'
+import nodemailer from 'nodemailer'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
-const FROM_EMAIL = process.env.ADMIN_EMAIL || 'onboarding@resend.dev'
+const transporter = nodemailer.createTransport({
+  host: process.env.SMTP_HOST || 'smtp.hostinger.com',
+  port: Number(process.env.SMTP_PORT) || 465,
+  secure: true, // true for 465, false for other ports
+  auth: {
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASSWORD,
+  },
+})
+
+const FROM_EMAIL = process.env.SMTP_FROM || process.env.SMTP_USER || 'admin@mediclock.click'
 
 async function sendEmail(to: string, subject: string, html: string) {
-  if (!process.env.RESEND_API_KEY) {
-    console.error('[Email] Missing RESEND_API_KEY')
-    return { success: false, error: 'Missing API key' }
+  if (!process.env.SMTP_USER || !process.env.SMTP_PASSWORD) {
+    console.error('[Email] Missing SMTP credentials')
+    return { success: false, error: 'Missing SMTP credentials' }
   }
 
   try {
-    const { data, error } = await resend.emails.send({
-      from: `MediClock <${FROM_EMAIL}>`,
+    const info = await transporter.sendMail({
+      from: `"Tu Guardia" <${FROM_EMAIL}>`,
       to,
       subject,
       html,
     })
 
-    if (error) {
-      console.error('[Email] Resend Error:', error)
-      return { success: false, error }
-    }
-
-    console.log('[Email] Sent successfully:', data?.id)
-    return { success: true, emailId: data?.id }
+    console.log('[Email] Sent successfully:', info.messageId)
+    return { success: true, emailId: info.messageId }
   } catch (error) {
     console.error('[Email] Error:', error)
     return { success: false, error }
@@ -57,62 +61,61 @@ export async function sendShiftAssignmentEmail(data: ShiftEmailData) {
           <head>
             <meta charset="utf-8">
             <style>
-              body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-              .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-              .header { background: #2563eb; color: white; padding: 20px; border-radius: 8px 8px 0 0; }
-              .content { background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; }
-              .shift-details { background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #2563eb; }
-              .detail-row { margin: 10px 0; }
-              .label { font-weight: bold; color: #6b7280; }
-              .value { color: #111827; }
-              .button { display: inline-block; background: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin-top: 20px; }
-              .footer { text-align: center; margin-top: 30px; color: #6b7280; font-size: 14px; }
+              body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; }
+              .container { max-width: 600px; margin: 0 auto; padding: 0; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+              .header { background: #2563eb; color: white; padding: 24px; text-align: center; }
+              .content { padding: 32px; background: #f8fafc; }
+              .shift-card { background: white; padding: 24px; border-radius: 12px; border: 1px solid #e2e8f0; margin: 24px 0; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+              .detail-row { display: flex; align-items: center; margin: 12px 0; padding-bottom: 12px; border-bottom: 1px solid #f1f5f9; }
+              .detail-row:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+              .label { font-weight: 600; color: #64748b; width: 100px; }
+              .value { color: #0f172a; font-weight: 500; }
+              .button { display: inline-block; background: #2563eb; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: 600; margin-top: 8px; text-align: center; }
+              .footer { text-align: center; padding: 24px; color: #94a3b8; font-size: 13px; background: white; border-top: 1px solid #e2e8f0; }
             </style>
           </head>
           <body>
             <div class="container">
               <div class="header">
-                <h1 style="margin: 0;">🏥 Nueva Guardia Asignada</h1>
+                <h1 style="margin: 0; font-size: 24px;">🏥 Nueva Guardia Asignada</h1>
               </div>
               <div class="content">
                 <p>Hola <strong>${data.doctorName}</strong>,</p>
-                <p>Se te ha asignado una nueva guardia. Por favor revisa los detalles y confirma tu disponibilidad.</p>
+                <p>Se te ha asignado una nueva guardia en <strong>Tu Guardia</strong>. Por favor revisa los detalles a continuación:</p>
                 
-                <div class="shift-details">
-                  <h2 style="margin-top: 0; color: #2563eb;">Detalles de la Guardia</h2>
+                <div class="shift-card">
                   <div class="detail-row">
-                    <span class="label">📅 Fecha:</span>
+                    <span class="label">📅 Fecha</span>
                     <span class="value">${data.shiftDate}</span>
                   </div>
                   <div class="detail-row">
-                    <span class="label">⏰ Horario:</span>
+                    <span class="label">⏰ Horario</span>
                     <span class="value">${data.shiftHours}</span>
                   </div>
                   <div class="detail-row">
-                    <span class="label">🏢 Área:</span>
+                    <span class="label">🏢 Área</span>
                     <span class="value">${data.shiftArea}</span>
                   </div>
                   <div class="detail-row">
-                    <span class="label">📋 Tipo:</span>
+                    <span class="label">📋 Tipo</span>
                     <span class="value">${data.shiftCategory}</span>
                   </div>
                   ${data.notes ? `
                   <div class="detail-row">
-                    <span class="label">📝 Notas:</span>
+                    <span class="label">📝 Notas</span>
                     <span class="value">${data.notes}</span>
                   </div>
                   ` : ''}
                 </div>
                 
-                <p style="margin-top: 20px;">Por favor ingresa al sistema para confirmar o rechazar esta guardia.</p>
-                
-                <a href="${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/dashboard" class="button">
-                  Ver en el Sistema
-                </a>
-                
-                <div class="footer">
-                  <p>Este es un correo automático de MediClock. Por favor no respondas a este mensaje.</p>
+                <div style="text-align: center;">
+                  <a href="${process.env.NEXT_PUBLIC_SITE_URL || 'https://mediclock.click'}/dashboard" class="button">
+                    Ver en Tu Guardia
+                  </a>
                 </div>
+              </div>
+              <div class="footer">
+                <p>Este es un correo automático de Tu Guardia. Por favor no respondas a este mensaje.</p>
               </div>
             </div>
           </body>
@@ -134,51 +137,50 @@ export async function sendShiftReminderEmail(data: ShiftEmailData) {
           <head>
             <meta charset="utf-8">
             <style>
-              body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-              .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-              .header { background: #f59e0b; color: white; padding: 20px; border-radius: 8px 8px 0 0; }
-              .content { background: #fffbeb; padding: 30px; border-radius: 0 0 8px 8px; }
-              .reminder-box { background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #f59e0b; }
-              .detail-row { margin: 10px 0; }
-              .label { font-weight: bold; color: #92400e; }
-              .value { color: #111827; }
-              .footer { text-align: center; margin-top: 30px; color: #92400e; font-size: 14px; }
+              body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; }
+              .container { max-width: 600px; margin: 0 auto; padding: 0; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+              .header { background: #f59e0b; color: white; padding: 24px; text-align: center; }
+              .content { padding: 32px; background: #fffbeb; }
+              .shift-card { background: white; padding: 24px; border-radius: 12px; border: 1px solid #fcd34d; margin: 24px 0; }
+              .detail-row { display: flex; align-items: center; margin: 12px 0; padding-bottom: 12px; border-bottom: 1px solid #fef3c7; }
+              .detail-row:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+              .label { font-weight: 600; color: #92400e; width: 100px; }
+              .value { color: #0f172a; font-weight: 500; }
+              .footer { text-align: center; padding: 24px; color: #94a3b8; font-size: 13px; background: white; border-top: 1px solid #e2e8f0; }
             </style>
           </head>
           <body>
             <div class="container">
               <div class="header">
-                <h1 style="margin: 0;">⏰ Recordatorio de Guardia</h1>
+                <h1 style="margin: 0; font-size: 24px;">⏰ Recordatorio de Guardia</h1>
               </div>
               <div class="content">
                 <p>Hola <strong>${data.doctorName}</strong>,</p>
-                <p>Este es un recordatorio de que tienes una guardia <strong>mañana</strong>.</p>
+                <p>Te recordamos que tienes una guardia programada para <strong>mañana</strong>:</p>
                 
-                <div class="reminder-box">
-                  <h2 style="margin-top: 0; color: #f59e0b;">📋 Detalles</h2>
+                <div class="shift-card">
                   <div class="detail-row">
-                    <span class="label">📅 Fecha:</span>
+                    <span class="label">📅 Fecha</span>
                     <span class="value">${data.shiftDate}</span>
                   </div>
                   <div class="detail-row">
-                    <span class="label">⏰ Horario:</span>
+                    <span class="label">⏰ Horario</span>
                     <span class="value">${data.shiftHours}</span>
                   </div>
                   <div class="detail-row">
-                    <span class="label">🏢 Área:</span>
+                    <span class="label">🏢 Área</span>
                     <span class="value">${data.shiftArea}</span>
                   </div>
                   <div class="detail-row">
-                    <span class="label">📋 Tipo:</span>
+                    <span class="label">📋 Tipo</span>
                     <span class="value">${data.shiftCategory}</span>
                   </div>
                 </div>
                 
-                <p style="margin-top: 20px;">¡Nos vemos mañana!</p>
-                
-                <div class="footer">
-                  <p>Este es un correo automático de MediClock. Por favor no respondas a este mensaje.</p>
-                </div>
+                <p style="text-align: center; font-weight: 500;">¡Que tengas una excelente guardia!</p>
+              </div>
+              <div class="footer">
+                <p>Este es un correo automático de Tu Guardia.</p>
               </div>
             </div>
           </body>
@@ -199,6 +201,7 @@ export async function sendStatusChangeEmail(
 ) {
   const statusText = status === 'confirmed' ? 'confirmó' : 'rechazó'
   const statusColor = status === 'confirmed' ? '#10b981' : '#ef4444'
+  const headerColor = status === 'confirmed' ? '#059669' : '#dc2626'
 
   return await sendEmail(
     adminEmail,
@@ -209,31 +212,30 @@ export async function sendStatusChangeEmail(
           <head>
             <meta charset="utf-8">
             <style>
-              body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-              .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-              .header { background: ${statusColor}; color: white; padding: 20px; border-radius: 8px 8px 0 0; }
-              .content { background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; }
-              .status-box { background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid ${statusColor}; }
-              .footer { text-align: center; margin-top: 30px; color: #6b7280; font-size: 14px; }
+              body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; }
+              .container { max-width: 600px; margin: 0 auto; padding: 0; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+              .header { background: ${headerColor}; color: white; padding: 24px; text-align: center; }
+              .content { padding: 32px; background: #f8fafc; }
+              .status-box { background: white; padding: 24px; border-radius: 12px; border-left: 6px solid ${statusColor}; margin: 24px 0; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+              .footer { text-align: center; padding: 24px; color: #94a3b8; font-size: 13px; background: white; border-top: 1px solid #e2e8f0; }
             </style>
           </head>
           <body>
             <div class="container">
               <div class="header">
-                <h1 style="margin: 0;">${status === 'confirmed' ? '✅' : '❌'} Actualización de Guardia</h1>
+                <h1 style="margin: 0; font-size: 24px;">${status === 'confirmed' ? '✅' : '❌'} Actualización de Guardia</h1>
               </div>
               <div class="content">
-                <p>El Dr./Dra. <strong>${doctorName}</strong> ${statusText} la guardia:</p>
+                <p>El médico <strong>${doctorName}</strong> ha ${statusText} la siguiente guardia:</p>
                 
                 <div class="status-box">
-                  <p><strong>📋 Tipo:</strong> ${shiftCategory}</p>
-                  <p><strong>📅 Fecha:</strong> ${shiftDate}</p>
-                  <p><strong>Estado:</strong> <span style="color: ${statusColor}; font-weight: bold;">${status.toUpperCase()}</span></p>
+                  <p style="margin: 8px 0;"><strong>📋 Tipo:</strong> ${shiftCategory}</p>
+                  <p style="margin: 8px 0;"><strong>📅 Fecha:</strong> ${shiftDate}</p>
+                  <p style="margin: 8px 0;"><strong>Estado:</strong> <span style="color: ${statusColor}; font-weight: bold;">${status.toUpperCase()}</span></p>
                 </div>
-                
-                <div class="footer">
-                  <p>Este es un correo automático de MediClock.</p>
-                </div>
+              </div>
+              <div class="footer">
+                <p>Este es un correo automático de Tu Guardia.</p>
               </div>
             </div>
           </body>
@@ -262,40 +264,55 @@ export async function sendFreeShiftAlert(
           <head>
             <meta charset="utf-8">
             <style>
-              body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-              .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-              .header { background: #8b5cf6; color: white; padding: 20px; border-radius: 8px 8px 0 0; }
-              .content { background: #faf5ff; padding: 30px; border-radius: 0 0 8px 8px; }
-              .alert-box { background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #8b5cf6; }
-              .button { display: inline-block; background: #8b5cf6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin-top: 20px; }
-              .footer { text-align: center; margin-top: 30px; color: #6b7280; font-size: 14px; }
+              body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; }
+              .container { max-width: 600px; margin: 0 auto; padding: 0; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+              .header { background: #8b5cf6; color: white; padding: 24px; text-align: center; }
+              .content { padding: 32px; background: #faf5ff; }
+              .shift-card { background: white; padding: 24px; border-radius: 12px; border: 1px solid #e9d5ff; margin: 24px 0; }
+              .detail-row { display: flex; align-items: center; margin: 12px 0; padding-bottom: 12px; border-bottom: 1px solid #f3e8ff; }
+              .detail-row:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+              .label { font-weight: 600; color: #7c3aed; width: 100px; }
+              .value { color: #0f172a; font-weight: 500; }
+              .button { display: inline-block; background: #8b5cf6; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: 600; margin-top: 8px; text-align: center; }
+              .footer { text-align: center; padding: 24px; color: #94a3b8; font-size: 13px; background: white; border-top: 1px solid #e2e8f0; }
             </style>
           </head>
           <body>
             <div class="container">
               <div class="header">
-                <h1 style="margin: 0;">🆓 Nueva Guardia Libre</h1>
+                <h1 style="margin: 0; font-size: 24px;">🆓 Nueva Guardia Libre</h1>
               </div>
               <div class="content">
                 <p>Hola <strong>${doctorName}</strong>,</p>
-                <p>Hay una nueva guardia libre disponible que coincide con tu rol:</p>
+                <p>Hay una nueva guardia libre disponible para tu rol. ¡Sé el primero en aceptarla!</p>
                 
-                <div class="alert-box">
-                  <p><strong>📅 Fecha:</strong> ${shiftDate}</p>
-                  <p><strong>⏰ Horario:</strong> ${shiftHours}</p>
-                  <p><strong>🏢 Área:</strong> ${shiftArea}</p>
-                  <p><strong>📋 Tipo:</strong> ${shiftCategory}</p>
+                <div class="shift-card">
+                  <div class="detail-row">
+                    <span class="label">📅 Fecha</span>
+                    <span class="value">${shiftDate}</span>
+                  </div>
+                  <div class="detail-row">
+                    <span class="label">⏰ Horario</span>
+                    <span class="value">${shiftHours}</span>
+                  </div>
+                  <div class="detail-row">
+                    <span class="label">🏢 Área</span>
+                    <span class="value">${shiftArea}</span>
+                  </div>
+                  <div class="detail-row">
+                    <span class="label">📋 Tipo</span>
+                    <span class="value">${shiftCategory}</span>
+                  </div>
                 </div>
                 
-                <p>Si estás disponible, ingresa al sistema para aceptar esta guardia.</p>
-                
-                <a href="${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/dashboard" class="button">
-                  Ver Guardia
-                </a>
-                
-                <div class="footer">
-                  <p>Este es un correo automático de MediClock.</p>
+                <div style="text-align: center;">
+                  <a href="${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/dashboard" class="button">
+                    Aceptar Guardia
+                  </a>
                 </div>
+              </div>
+              <div class="footer">
+                <p>Este es un correo automático de Tu Guardia.</p>
               </div>
             </div>
           </body>

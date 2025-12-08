@@ -254,6 +254,10 @@ export async function acceptFreeShift(shiftId: string, doctorId: string) {
 export async function updateShift(shiftId: string, updates: any) {
   const supabase = await getSupabaseServerClient()
 
+  // First get the original shift to compare
+  const { data: oldShiftResult } = await supabase.from("shifts").select("*").eq("id", shiftId).single()
+  const oldShift = oldShiftResult as Shift
+
   const { data, error } = await supabase
     .from("shifts")
     .update({ ...updates, updated_at: new Date().toISOString() })
@@ -267,6 +271,70 @@ export async function updateShift(shiftId: string, updates: any) {
   }
 
   const shift = data as Shift
+
+  // Log audit event
+  const eventData: ShiftEventInsert = {
+    shift_id: shift.id,
+    event_type: "updated",
+    doctor_id: null, // Admin action
+    notes: "Actualización por administrador",
+  }
+  await supabase.from("shift_events").insert(eventData)
+
+  // Handle Notifications
+
+  // Case 1: Reassigned to a new doctor (or assigned from null)
+  if (updates.doctor_id && updates.doctor_id !== oldShift.doctor_id) {
+    const { data: doctorData } = await supabase
+      .from("doctors")
+      .select("*")
+      .eq("id", updates.doctor_id)
+      .single()
+
+    const doctor = doctorData as Doctor | null
+    if (doctor) {
+      await sendShiftAssignmentEmail({
+        doctorName: doctor.full_name,
+        doctorEmail: doctor.email,
+        shiftCategory: shift.shift_category,
+        shiftArea: shift.shift_area,
+        shiftHours: shift.shift_hours,
+        shiftDate: format(parseISO(shift.shift_date), "dd/MM/yyyy"),
+        notes: shift.notes ?? undefined,
+      })
+    }
+  }
+
+  // Case 2: Converted to free shift with pool assignment
+  if (
+    (updates.shift_type === "free" && updates.shift_type !== oldShift.shift_type) ||
+    (shift.shift_type === "free" &&
+      updates.assigned_to_pool &&
+      JSON.stringify(updates.assigned_to_pool) !== JSON.stringify(oldShift.assigned_to_pool))
+  ) {
+    if (shift.assigned_to_pool && shift.assigned_to_pool.length > 0) {
+      const { data: eligibleDoctorsData } = await supabase
+        .from("doctors")
+        .select("*")
+        .in("role", shift.assigned_to_pool)
+
+      const eligibleDoctors = eligibleDoctorsData as Doctor[] | null
+      if (eligibleDoctors) {
+        await Promise.allSettled(
+          eligibleDoctors.map((doctor) =>
+            sendFreeShiftAlert(
+              doctor.email,
+              doctor.full_name,
+              shift.shift_category,
+              shift.shift_area,
+              shift.shift_hours,
+              format(parseISO(shift.shift_date), "dd/MM/yyyy")
+            )
+          )
+        )
+      }
+    }
+  }
 
   revalidatePath("/admin")
   revalidatePath("/dashboard")

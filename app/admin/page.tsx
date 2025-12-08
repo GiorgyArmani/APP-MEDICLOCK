@@ -31,22 +31,25 @@ export default async function AdminPage() {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      {/* Header */}
-      <header className="sticky top-0 z-50 w-full border-b bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-slate-900">Panel de Administración</h1>
-              <p className="text-sm text-slate-600">Gestión de guardias y médicos</p>
-            </div>
+      {/* Floating Action Button for Mobile */}
+      <div className="fixed bottom-6 right-6 z-40 lg:hidden">
+        <CreateShiftDialog doctors={doctors} variant="fab" />
+      </div>
+
+      <main className="container mx-auto px-4 py-8 space-y-8 pt-20 lg:pt-8">
+        {/* Page Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900">Panel de Administración</h1>
+            <p className="text-sm text-slate-600">Gestión de guardias y médicos</p>
+          </div>
+          {/* Desktop Create Button */}
+          <div className="hidden lg:block">
             <CreateShiftDialog doctors={doctors} />
           </div>
         </div>
-      </header>
-
-      <main className="container mx-auto px-4 py-8 space-y-8">
         {/* Stats Cards */}
-        <div className="grid gap-4 md:grid-cols-4">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Guardias</CardTitle>
