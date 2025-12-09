@@ -16,6 +16,9 @@ import {
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { toast } from "sonner"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Label } from "@/components/ui/label"
+import { useState } from "react"
 
 interface DeleteShiftDialogProps {
     shift: Shift
@@ -25,6 +28,7 @@ interface DeleteShiftDialogProps {
 
 export function DeleteShiftDialog({ shift, open, onOpenChange }: DeleteShiftDialogProps) {
     const [isPending, startTransition] = useTransition()
+    const [deleteAllFuture, setDeleteAllFuture] = useState(false)
     const router = useRouter()
 
     const shiftTypeInfo = SHIFT_TYPES.find((st) => st.value === shift.shift_category)
@@ -38,8 +42,8 @@ export function DeleteShiftDialog({ shift, open, onOpenChange }: DeleteShiftDial
     const handleDelete = () => {
         console.log("Client: handleDelete triggered for shift:", shift.id)
         startTransition(async () => {
-            console.log("Client: Calling server action deleteShift...")
-            const result = await deleteShift(shift.id)
+            console.log("Client: Calling server action deleteShift...", deleteAllFuture)
+            const result = await deleteShift(shift.id, deleteAllFuture)
             console.log("Client: deleteShift result:", result)
 
             if (result.error) {
@@ -67,6 +71,19 @@ export function DeleteShiftDialog({ shift, open, onOpenChange }: DeleteShiftDial
                                 <p><span className="font-medium">Fecha:</span> {formatDate(shift.shift_date)}</p>
                                 <p><span className="font-medium">Horario:</span> {shift.shift_hours}</p>
                             </div>
+
+                            {shift.recurrence_id && (
+                                <div className="flex items-center space-x-2 pt-4 border-t mt-4">
+                                    <Checkbox
+                                        id="delete-all"
+                                        checked={deleteAllFuture}
+                                        onCheckedChange={(checked) => setDeleteAllFuture(checked as boolean)}
+                                    />
+                                    <Label htmlFor="delete-all" className="font-medium">
+                                        Eliminar también todas las futuras (Periódica)
+                                    </Label>
+                                </div>
+                            )}
                         </div>
                     </AlertDialogDescription>
                 </AlertDialogHeader>

@@ -384,3 +384,88 @@ export async function sendWelcomeEmail(
       `
   )
 }
+
+/**
+ * Send monthly schedule email
+ */
+export async function sendMonthlyScheduleEmail(
+  doctorEmail: string,
+  doctorName: string,
+  monthName: string,
+  shifts: { date: string; hours: string; category: string; area: string }[]
+) {
+  const shiftsRows = shifts
+    .map(
+      (shift) => `
+    <tr style="border-bottom: 1px solid #e2e8f0;">
+      <td style="padding: 12px; font-weight: 500;">${shift.date}</td>
+      <td style="padding: 12px;">${shift.hours}</td>
+      <td style="padding: 12px;">${shift.category}</td>
+      <td style="padding: 12px;">${shift.area}</td>
+    </tr>
+  `
+    )
+    .join("")
+
+  return await sendEmail(
+    doctorEmail,
+    `Tu Cronograma de Guardias - ${monthName}`,
+    `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta charset="utf-8">
+            <style>
+              body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; }
+              .container { max-width: 600px; margin: 0 auto; padding: 0; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+              .header { background: #0f172a; color: white; padding: 24px; text-align: center; }
+              .content { padding: 32px; background: #f8fafc; }
+              .schedule-box { background: white; padding: 0; border-radius: 12px; border: 1px solid #e2e8f0; margin: 24px 0; overflow: hidden; }
+              .button { display: inline-block; background: #0f172a; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: 600; margin-top: 8px; text-align: center; }
+              .footer { text-align: center; padding: 24px; color: #94a3b8; font-size: 13px; background: white; border-top: 1px solid #e2e8f0; }
+              table { width: 100%; border-collapse: collapse; text-align: left; font-size: 14px; }
+              th { background: #f1f5f9; padding: 12px; font-weight: 600; color: #64748b; }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <div class="header">
+                <h1 style="margin: 0; font-size: 24px;">📅 Cronograma de ${monthName}</h1>
+              </div>
+              <div class="content">
+                <p>Hola <strong>${doctorName}</strong>,</p>
+                <p>Aquí tienes el resumen de tus guardias confirmadas para el mes de <strong>${monthName}</strong>:</p>
+                
+                <div class="schedule-box">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Fecha</th>
+                        <th>Horario</th>
+                        <th>Tipo</th>
+                        <th>Área</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${shiftsRows}
+                    </tbody>
+                  </table>
+                </div>
+
+                <p>Si tienes alguna duda o necesitas realizar cambios, por favor contacta con la administración.</p>
+                
+                <div style="text-align: center; margin-top: 32px;">
+                  <a href="${process.env.NEXT_PUBLIC_SITE_URL || 'https://mediclock.click'}/dashboard" class="button">
+                    Ver en Medi Clock
+                  </a>
+                </div>
+              </div>
+              <div class="footer">
+                <p>Este es un correo automático de Medi Clock.</p>
+              </div>
+            </div>
+          </body>
+        </html>
+      `
+  )
+}

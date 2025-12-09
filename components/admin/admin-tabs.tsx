@@ -61,7 +61,7 @@ export function AdminTabs({ shifts, doctors, defaultTab }: AdminTabsProps) {
             </TabsContent>
 
             <TabsContent value="calendar" className="space-y-4">
-                <AdminCalendar shifts={shifts} />
+                <AdminCalendar shifts={shifts} doctors={doctors} />
             </TabsContent>
 
             <TabsContent value="doctors" className="space-y-4">

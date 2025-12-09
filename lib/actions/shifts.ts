@@ -120,12 +120,9 @@ export async function createShift(shiftData: CreateShiftParams) {
 
       const doctor = doctorData as { full_name: string; email: string } | null
       if (doctor) {
-        // Only send for the FIRST shift if it is a recurrence to avoid spamming 50 emails
-        // Or send for all? Standard practice is usually a summary.
-        // Let's send only for the first one if recurring to avoid spam bomb.
-
-        const isFirstInSeries = shift.shift_date === baseShiftData.shift_date
-        if (!isRecurring || isFirstInSeries) {
+        // [MODIFIED] Only send immediate email for SINGLE non-recurring shifts.
+        // Recurring shifts will be notified via the monthly schedule cron.
+        if (!isRecurring) {
           await sendShiftAssignmentEmail({
             doctorName: doctor.full_name,
             doctorEmail: doctor.email,
@@ -470,25 +467,56 @@ export async function updateShift(shiftId: string, updates: any) {
   return { data: shift }
 }
 
-export async function deleteShift(shiftId: string) {
-  console.log(`[deleteShift] Action started for shiftId: ${shiftId}`)
+export async function deleteShift(shiftId: string, deleteAllFuture: boolean = false) {
+  console.log(`[deleteShift] Action started for shiftId: ${shiftId}, deleteAllFuture: ${deleteAllFuture}`)
   const supabase = await getSupabaseServerClient()
 
-  // Optimization: Now that we have ON DELETE CASCADE in the database,
-  // we can simply delete the shift and the DB handles the rest.
-  console.log(`[deleteShift] Attempting DELETE on 'shifts' table...`)
+  if (deleteAllFuture) {
+    // 1. Get the shift details to find recurrence_id and date
+    const { data: shift, error: fetchError } = await supabase
+      .from("shifts")
+      .select("recurrence_id, shift_date")
+      .eq("id", shiftId)
+      .single()
 
-  const { error } = await supabase.from("shifts").delete().eq("id", shiftId)
+    if (fetchError || !shift) {
+      console.error("[deleteShift] Error fetching shift details:", fetchError)
+      return { error: "No se encontró la guardia para eliminar" }
+    }
 
-  if (error) {
-    console.error("[deleteShift] Error deleting shift:", error)
-    return { error: error.message }
+    if (shift.recurrence_id) {
+      // 2. Delete all future shifts in the series
+      console.log(`[deleteShift] Deleting recurring series ${shift.recurrence_id} from ${shift.shift_date}`)
+      const { error: deleteError } = await supabase
+        .from("shifts")
+        .delete()
+        .eq("recurrence_id", shift.recurrence_id)
+        .gte("shift_date", shift.shift_date) // Delete this and all future ones
+
+      if (deleteError) {
+        console.error("[deleteShift] Error deleting series:", deleteError)
+        return { error: deleteError.message }
+      }
+    } else {
+      // Fallback if not recurring but requested (shouldn't happen UI side ideally)
+      console.log("[deleteShift] Shift is not recurring, deleting single instance")
+      const { error } = await supabase.from("shifts").delete().eq("id", shiftId)
+      if (error) return { error: error.message }
+    }
+  } else {
+    // Single deletion
+    console.log(`[deleteShift] Attempting DELETE on 'shifts' table...`)
+    const { error } = await supabase.from("shifts").delete().eq("id", shiftId)
+
+    if (error) {
+      console.error("[deleteShift] Error deleting shift:", error)
+      return { error: error.message }
+    }
   }
 
   console.log(`[deleteShift] DELETE successful. Revalidating paths...`)
   revalidatePath("/admin")
   revalidatePath("/dashboard")
-  console.log(`[deleteShift] Revalidation executing.`)
 
   return { success: true }
 }

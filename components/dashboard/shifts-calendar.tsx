@@ -1,10 +1,11 @@
 "use client"
 
 import { useState } from "react"
-import type { Shift } from "@/lib/supabase/types"
+import type { Shift, Doctor } from "@/lib/supabase/types"
 import { Card, CardContent } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { ShiftCard } from "./shift-card"
+import { AdminShiftCard } from "@/components/admin/admin-shift-card"
 import { CalendarHeader } from "./calendar/calendar-header"
 import { MonthView } from "./calendar/month-view"
 import { WeekView } from "./calendar/week-view"
@@ -12,9 +13,10 @@ import { DayView } from "./calendar/day-view"
 
 interface ShiftsCalendarProps {
   shifts: Shift[]
+  doctors?: Doctor[] // Optional, only for admin view
 }
 
-export function ShiftsCalendar({ shifts }: ShiftsCalendarProps) {
+export function ShiftsCalendar({ shifts, ...props }: ShiftsCalendarProps) {
   const [currentDate, setCurrentDate] = useState(new Date())
   const [view, setView] = useState<"month" | "week" | "day">("month")
 
@@ -129,7 +131,11 @@ export function ShiftsCalendar({ shifts }: ShiftsCalendarProps) {
           </DialogHeader>
           <div className="space-y-4 mt-4">
             {selectedShifts.map((shift) => (
-              <ShiftCard key={shift.id} shift={shift} doctorId={selectedDoctorId} />
+              props.doctors ? (
+                <AdminShiftCard key={shift.id} shift={shift} doctors={props.doctors} />
+              ) : (
+                <ShiftCard key={shift.id} shift={shift} doctorId={selectedDoctorId} />
+              )
             ))}
           </div>
         </DialogContent>
