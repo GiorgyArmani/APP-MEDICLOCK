@@ -58,6 +58,7 @@ export interface Database {
           free_pending_at: string | null
           created_at: string
           updated_at: string
+          recurrence_id: string | null
         }
         Insert: {
           id?: string
@@ -73,6 +74,7 @@ export interface Database {
           free_pending_at?: string | null
           created_at?: string
           updated_at?: string
+          recurrence_id?: string | null
         }
         Update: {
           id?: string
@@ -88,6 +90,7 @@ export interface Database {
           free_pending_at?: string | null
           created_at?: string
           updated_at?: string
+          recurrence_id?: string | null
         }
         Relationships: [
           {

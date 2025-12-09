@@ -27,6 +27,10 @@ export function CreateShiftForm({ doctors, onSuccess }: CreateShiftFormProps) {
   const [selectedPools, setSelectedPools] = useState<DoctorRole[]>([])
   const [selectedShiftCategory, setSelectedShiftCategory] = useState<string>("")
 
+  // Recurrence state
+  const [isRecurring, setIsRecurring] = useState(false)
+  const [recurrenceEndDate, setRecurrenceEndDate] = useState("")
+
   const [formData, setFormData] = useState({
     shiftDate: "",
     notes: "",
@@ -57,6 +61,8 @@ export function CreateShiftForm({ doctors, onSuccess }: CreateShiftFormProps) {
         status: shiftType === "assigned" ? "new" : "free",
         notes: formData.notes,
         assigned_to_pool: shiftType === "free" ? selectedPools : undefined,
+        isRecurring,
+        recurrenceEndDate: isRecurring ? recurrenceEndDate : undefined,
       })
 
       if (result.error) {
@@ -68,6 +74,8 @@ export function CreateShiftForm({ doctors, onSuccess }: CreateShiftFormProps) {
         setSelectedDoctor("")
         setSelectedPools([])
         setSelectedShiftCategory("")
+        setIsRecurring(false)
+        setRecurrenceEndDate("")
         router.refresh()
         onSuccess?.()
       }
@@ -168,16 +176,48 @@ export function CreateShiftForm({ doctors, onSuccess }: CreateShiftFormProps) {
         </div>
       )}
 
-      {/* Fecha */}
-      <div className="space-y-2">
-        <Label htmlFor="shiftDate">Fecha *</Label>
-        <Input
-          id="shiftDate"
-          type="date"
-          value={formData.shiftDate}
-          onChange={(e) => setFormData({ ...formData, shiftDate: e.target.value })}
-          required
-        />
+      {/* Fecha y Recurrencia */}
+      <div className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="shiftDate">Fecha de Inicio *</Label>
+          <Input
+            id="shiftDate"
+            type="date"
+            value={formData.shiftDate}
+            onChange={(e) => setFormData({ ...formData, shiftDate: e.target.value })}
+            required
+          />
+        </div>
+
+        <div className="flex items-center space-x-2 border p-3 rounded-md bg-slate-50">
+          <input
+            type="checkbox"
+            id="isRecurring"
+            checked={isRecurring}
+            onChange={(e) => setIsRecurring(e.target.checked)}
+            className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+          />
+          <Label htmlFor="isRecurring" className="flex-1 cursor-pointer font-medium">
+            Repetir semanalmente (Guardia Perpetua)
+          </Label>
+        </div>
+
+        {isRecurring && (
+          <div className="space-y-2 pl-4 border-l-2 border-slate-200">
+            <Label htmlFor="recurrenceEndDate">Repetir hasta *</Label>
+            <Input
+              id="recurrenceEndDate"
+              type="date"
+              value={recurrenceEndDate}
+              onChange={(e) => setRecurrenceEndDate(e.target.value)}
+              required={isRecurring}
+              min={formData.shiftDate}
+            />
+            <p className="text-xs text-slate-500">
+              Se crearán guardias semanales desde la fecha de inicio hasta esta fecha.
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Notas */}

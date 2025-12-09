@@ -27,6 +27,10 @@ export function EditShiftDialog({ shift, open, onOpenChange }: EditShiftDialogPr
     const [shiftDate, setShiftDate] = useState(shift.shift_date)
     const [notes, setNotes] = useState(shift.notes || "")
 
+    // Recurrence logic for converting single shift to perpetual
+    const [isRecurring, setIsRecurring] = useState(false)
+    const [recurrenceEndDate, setRecurrenceEndDate] = useState("")
+
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault()
 
@@ -43,6 +47,9 @@ export function EditShiftDialog({ shift, open, onOpenChange }: EditShiftDialogPr
                 shift_hours: shiftInfo.hours,
                 shift_date: shiftDate,
                 notes: notes || null,
+                // Pass recurrence params
+                isRecurring,
+                recurrenceEndDate: isRecurring ? recurrenceEndDate : undefined
             })
 
             if (result.error) {
@@ -83,16 +90,61 @@ export function EditShiftDialog({ shift, open, onOpenChange }: EditShiftDialogPr
                         </Select>
                     </div>
 
-                    {/* Fecha */}
-                    <div className="space-y-2">
-                        <Label htmlFor="shiftDate">Fecha *</Label>
-                        <Input
-                            id="shiftDate"
-                            type="date"
-                            value={shiftDate}
-                            onChange={(e) => setShiftDate(e.target.value)}
-                            required
-                        />
+                    {/* Fecha y Recurrencia */}
+                    <div className="space-y-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="shiftDate">Fecha de Inicio *</Label>
+                            <Input
+                                id="shiftDate"
+                                type="date"
+                                value={shiftDate}
+                                onChange={(e) => setShiftDate(e.target.value)}
+                                required
+                            />
+                        </div>
+
+                        {/* Recurrence Option - Only show if not already part of a series or if we want to extend it? 
+                            User request: "so all the shift that i have already created ... can be easyly added into this perpetual status"
+                            This implies taking a single shift and making it recurring.
+                        */}
+                        {!shift.recurrence_id && (
+                            <div className="flex items-center space-x-2 border p-3 rounded-md bg-slate-50">
+                                <input
+                                    type="checkbox"
+                                    id="isRecurring"
+                                    checked={isRecurring}
+                                    onChange={(e) => setIsRecurring(e.target.checked)}
+                                    className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                                />
+                                <Label htmlFor="isRecurring" className="flex-1 cursor-pointer font-medium">
+                                    Convertir en Guardia Perpetua (Repetir semanalmente)
+                                </Label>
+                            </div>
+                        )}
+
+                        {isRecurring && (
+                            <div className="space-y-2 pl-4 border-l-2 border-slate-200">
+                                <Label htmlFor="recurrenceEndDate">Repetir hasta *</Label>
+                                <Input
+                                    id="recurrenceEndDate"
+                                    type="date"
+                                    value={recurrenceEndDate}
+                                    onChange={(e) => setRecurrenceEndDate(e.target.value)}
+                                    required={isRecurring}
+                                    min={shiftDate}
+                                />
+                                <p className="text-xs text-slate-500">
+                                    Se crearán nuevas guardias semanales desde esta fecha.
+                                </p>
+                            </div>
+                        )}
+
+                        {/* Info if already recurring */}
+                        {shift.recurrence_id && (
+                            <div className="p-3 bg-blue-50 text-blue-800 text-sm rounded-md">
+                                Esta guardia es parte de una serie recurrente.
+                            </div>
+                        )}
                     </div>
 
                     {/* Notas */}
