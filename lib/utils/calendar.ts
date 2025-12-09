@@ -176,3 +176,155 @@ export function downloadICS(icsContent: string, filename: string = 'guardias.ics
     document.body.removeChild(link)
     URL.revokeObjectURL(link.href)
 }
+
+/**
+ * Parse shift hours string to get start and end hours (0-23)
+ * Handles formats like: "08-14", "8-14", "08:00-14:00", "8:30 - 14:30"
+ * Returns numbers for grid positioning
+ */
+export function parseShiftTime(shiftHours: string): { start: number; end: number; startMinutes: number; endMinutes: number } {
+    try {
+        // Clean up string
+        const cleaned = shiftHours.replace(/\s/g, '').toLowerCase()
+
+        let startStr = '8'
+        let endStr = '14'
+
+        if (cleaned.includes('-')) {
+            const parts = cleaned.split('-')
+            startStr = parts[0]
+            endStr = parts[1]
+        }
+
+        // Parse start
+        let start = 8
+        let startMinutes = 0
+        if (startStr.includes(':')) {
+            const [h, m] = startStr.split(':').map(Number)
+            start = h
+            startMinutes = m || 0
+        } else {
+            start = parseInt(startStr, 10)
+        }
+
+        // Parse end
+        let end = 14
+        let endMinutes = 0
+        if (endStr.includes(':')) {
+            const [h, m] = endStr.split(':').map(Number)
+            end = h
+            endMinutes = m || 0
+        } else {
+            end = parseInt(endStr, 10)
+        }
+
+        // Validation / Fallback
+        if (isNaN(start)) start = 8
+        if (isNaN(end)) end = start + 6 // Default 6h duration
+
+        // Handle overnight shifts (e.g. 20-08)
+        // For visualization on a single day grid, we might cap at 24 OR verify logic
+        // But the grid usually goes 0-24. If end < start, it ends next day.
+
+        return { start, end, startMinutes, endMinutes }
+    } catch (e) {
+        console.error("Error parsing shift hours:", shiftHours, e)
+        return { start: 8, end: 14, startMinutes: 0, endMinutes: 0 }
+    }
+}
+
+/**
+ * Get days for the week containing the given date
+ */
+export function getWeekDays(date: Date): Date[] {
+    const start = new Date(date)
+    start.setDate(date.getDate() - date.getDay()) // Start on Sunday
+
+    const days = []
+    for (let i = 0; i < 7; i++) {
+        const day = new Date(start)
+        day.setDate(start.getDate() + i)
+        days.push(day)
+    }
+    return days
+}
+
+
+export interface VisualShiftSegment {
+    shift: any
+    start: number // 0-24
+    end: number   // 0-24
+    startMinutes: number
+    endMinutes: number
+    isContinuation: boolean // true if this is the 00:00 part of an overnight shift
+    isOvernightStart: boolean // true if this is the 20:00 part of an overnight shift
+}
+
+/**
+ * Get visual shift segments for a specific date, handling overnight splits.
+ */
+export function getVisualShiftsForDate(date: Date, shifts: any[]): VisualShiftSegment[] {
+    const segments: VisualShiftSegment[] = []
+    const dateStr = format(date, 'yyyy-MM-dd')
+
+    // 1. Find shifts starting on this date
+    const startingShifts = shifts.filter(s => s.shift_date === dateStr)
+
+    startingShifts.forEach(shift => {
+        const { start, end, startMinutes, endMinutes } = parseShiftTime(shift.shift_hours)
+
+        // Check if overnight (end < start implies crossing midnight in 24h format, usually)
+        // Or specific logic: if 'end' is small (e.g. 8) and 'start' is big (e.g. 20).
+        // Our parseShiftTime logic returns start=20, end=26 (start+6) by default if logic catches it?
+        // Let's re-read parseShiftTime.
+        // It says: "if (durationHours < 0) durationHours += 24" -> implies end is adjusted?
+        // Actually parseShiftTime returns simple numbers. width strict 0-23 logic, end < start means overnight.
+        // But the previous usage did: `if (durationHours < 0) durationHours += 24`, meaning `end` wasn't adjusted to be > start.
+
+        let visualEnd = end
+        let isOvernight = false
+
+        // If the parsed end is smaller than start, it implies it ends the next day.
+        if (end < start) {
+            isOvernight = true
+            visualEnd = 24 // Render until midnight
+        }
+
+        segments.push({
+            shift,
+            start,
+            end: visualEnd,
+            startMinutes,
+            endMinutes: isOvernight ? 0 : endMinutes, // If overnight, current segment ends at 24:00
+            isContinuation: false,
+            isOvernightStart: isOvernight
+        })
+    })
+
+    // 2. Find shifts starting yesterday that spill into today
+    const yesterday = new Date(date)
+    yesterday.setDate(date.getDate() - 1)
+    const yesterdayStr = format(yesterday, 'yyyy-MM-dd')
+
+    const yesterdayShifts = shifts.filter(s => s.shift_date === yesterdayStr)
+
+    yesterdayShifts.forEach(shift => {
+        const { start, end, endMinutes } = parseShiftTime(shift.shift_hours)
+
+        // If it was overnight
+        if (end < start) {
+            // This day (today) gets the segment from 00:00 to end
+            segments.push({
+                shift,
+                start: 0,
+                end: end,
+                startMinutes: 0,
+                endMinutes: endMinutes,
+                isContinuation: true,
+                isOvernightStart: false
+            })
+        }
+    })
+
+    return segments
+}
