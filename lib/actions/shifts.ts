@@ -471,17 +471,24 @@ export async function updateShift(shiftId: string, updates: any) {
 }
 
 export async function deleteShift(shiftId: string) {
+  console.log(`[deleteShift] Action started for shiftId: ${shiftId}`)
   const supabase = await getSupabaseServerClient()
+
+  // Optimization: Now that we have ON DELETE CASCADE in the database,
+  // we can simply delete the shift and the DB handles the rest.
+  console.log(`[deleteShift] Attempting DELETE on 'shifts' table...`)
 
   const { error } = await supabase.from("shifts").delete().eq("id", shiftId)
 
   if (error) {
-    console.error("Error deleting shift:", error)
+    console.error("[deleteShift] Error deleting shift:", error)
     return { error: error.message }
   }
 
+  console.log(`[deleteShift] DELETE successful. Revalidating paths...`)
   revalidatePath("/admin")
   revalidatePath("/dashboard")
+  console.log(`[deleteShift] Revalidation executing.`)
 
   return { success: true }
 }

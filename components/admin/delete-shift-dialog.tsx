@@ -36,11 +36,17 @@ export function DeleteShiftDialog({ shift, open, onOpenChange }: DeleteShiftDial
     }
 
     const handleDelete = () => {
+        console.log("Client: handleDelete triggered for shift:", shift.id)
         startTransition(async () => {
+            console.log("Client: Calling server action deleteShift...")
             const result = await deleteShift(shift.id)
+            console.log("Client: deleteShift result:", result)
+
             if (result.error) {
+                console.error("Client: Error received:", result.error)
                 toast.error(`Error: ${result.error}`)
             } else {
+                console.log("Client: Success. closing dialog and refreshing.")
                 toast.success("Guardia eliminada exitosamente")
                 onOpenChange(false)
                 router.refresh()
@@ -53,12 +59,14 @@ export function DeleteShiftDialog({ shift, open, onOpenChange }: DeleteShiftDial
             <AlertDialogContent>
                 <AlertDialogHeader>
                     <AlertDialogTitle>¿Eliminar guardia?</AlertDialogTitle>
-                    <AlertDialogDescription className="space-y-2">
-                        <p>Esta acción no se puede deshacer. Se eliminará permanentemente:</p>
-                        <div className="bg-slate-50 p-3 rounded-md mt-2 space-y-1 text-slate-900">
-                            <p><span className="font-medium">Tipo:</span> {shiftLabel}</p>
-                            <p><span className="font-medium">Fecha:</span> {formatDate(shift.shift_date)}</p>
-                            <p><span className="font-medium">Horario:</span> {shift.shift_hours}</p>
+                    <AlertDialogDescription asChild className="space-y-2">
+                        <div className="text-muted-foreground text-sm space-y-2">
+                            <p>Esta acción no se puede deshacer. Se eliminará permanentemente:</p>
+                            <div className="bg-slate-50 p-3 rounded-md mt-2 space-y-1 text-slate-900">
+                                <p><span className="font-medium">Tipo:</span> {shiftLabel}</p>
+                                <p><span className="font-medium">Fecha:</span> {formatDate(shift.shift_date)}</p>
+                                <p><span className="font-medium">Horario:</span> {shift.shift_hours}</p>
+                            </div>
                         </div>
                     </AlertDialogDescription>
                 </AlertDialogHeader>
