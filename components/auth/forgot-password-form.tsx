@@ -1,85 +1,107 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { forgotPassword } from "@/lib/actions/auth"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import Link from "next/link"
-import { ArrowLeft, CheckCircle2 } from "lucide-react"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import Link from "next/link";
+import { useState } from "react";
 
-export function ForgotPasswordForm() {
-    const [isLoading, setIsLoading] = useState(false)
-    const [error, setError] = useState<string | null>(null)
-    const [isSuccess, setIsSuccess] = useState(false)
+export function ForgotPasswordForm({
+  className,
+  ...props
+}: React.ComponentPropsWithoutRef<"div">) {
+  const [email, setEmail] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-    async function onSubmit(formData: FormData) {
-        setIsLoading(true)
-        setError(null)
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError(null);
 
-        const email = formData.get("email") as string
-        const result = await forgotPassword(email)
+    // Dynamic import to avoid server/client boundary issues if not handled by framework
+    const { forgotPassword } = await import("@/lib/actions/auth");
 
-        if (result?.error) {
-            setError(result.error)
-            setIsLoading(false)
-        } else {
-            setIsSuccess(true)
-            setIsLoading(false)
-        }
+    try {
+      const result = await forgotPassword(email);
+
+      if (result?.error) {
+        throw new Error(result.error);
+      }
+
+      setSuccess(true);
+    } catch (error: unknown) {
+      setError(error instanceof Error ? error.message : "An error occurred");
+    } finally {
+      setIsLoading(false);
     }
+  };
 
-    if (isSuccess) {
-        return (
-            <div className="space-y-6">
-                <Alert className="bg-green-50 border-green-200">
-                    <CheckCircle2 className="h-4 w-4 text-green-600" />
-                    <AlertTitle className="text-green-800">Correo enviado</AlertTitle>
-                    <AlertDescription className="text-green-700">
-                        Si existe una cuenta con ese correo, recibirás un enlace para recuperar tu contraseña.
-                    </AlertDescription>
-                </Alert>
-                <Button variant="outline" className="w-full" asChild>
-                    <Link href="/login">Volver al inicio de sesión</Link>
-                </Button>
-            </div>
-        )
-    }
-
-    return (
-        <form action={onSubmit} className="space-y-4">
-            <div className="space-y-2">
-                <Label htmlFor="email">Correo electrónico</Label>
-                <Input
+  return (
+    <div className={cn("flex flex-col gap-6", className)} {...props}>
+      {success ? (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-2xl">Check Your Email</CardTitle>
+            <CardDescription>Password reset instructions sent</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">
+              If you registered using your email and password, you will receive
+              a password reset email.
+            </p>
+          </CardContent>
+        </Card>
+      ) : (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-2xl">Reset Your Password</CardTitle>
+            <CardDescription>
+              Type in your email and we&apos;ll send you a link to reset your
+              password
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleForgotPassword}>
+              <div className="flex flex-col gap-6">
+                <div className="grid gap-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input
                     id="email"
-                    name="email"
                     type="email"
-                    placeholder="doctor@clinica.com"
+                    placeholder="m@example.com"
                     required
-                    disabled={isLoading}
-                />
-            </div>
-
-            {error && (
-                <div className="bg-red-50 text-red-600 p-3 rounded-md text-sm border border-red-200">
-                    {error}
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                  />
                 </div>
-            )}
-
-            <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? "Enviando enlace..." : "Enviar enlace de recuperación"}
-            </Button>
-
-            <div className="text-center">
+                {error && <p className="text-sm text-red-500">{error}</p>}
+                <Button type="submit" className="w-full" disabled={isLoading}>
+                  {isLoading ? "Sending..." : "Send reset email"}
+                </Button>
+              </div>
+              <div className="mt-4 text-center text-sm">
+                Already have an account?{" "}
                 <Link
-                    href="/login"
-                    className="inline-flex items-center text-sm text-muted-foreground hover:text-primary transition-colors"
+                  href="/auth/login"
+                  className="underline underline-offset-4"
                 >
-                    <ArrowLeft className="mr-2 h-4 w-4" />
-                    Volver al inicio de sesión
+                  Login
                 </Link>
-            </div>
-        </form>
-    )
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
 }

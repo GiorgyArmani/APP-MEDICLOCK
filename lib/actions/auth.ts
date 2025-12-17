@@ -117,6 +117,9 @@ export async function forgotPassword(email: string) {
   const adminSupabase = await getSupabaseAdminClient()
 
   // 1. Generate recovery link
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"
+  console.log("USING SITE URL:", siteUrl)
+
   const { data, error } = await adminSupabase.auth.admin.generateLink({
     type: "recovery",
     email,
@@ -133,6 +136,8 @@ export async function forgotPassword(email: string) {
   if (!data?.properties?.action_link) {
     return { error: "Error al generar enlace." }
   }
+
+  console.log("GENERATED LINK:", data.properties.action_link)
 
   // 2. Send custom email
   const emailResult = await sendPasswordRecoveryEmail(email, data.properties.action_link)

@@ -1,56 +1,98 @@
-import { createServerClient } from "@supabase/ssr"
-import { type NextRequest, NextResponse } from "next/server"
-import { cookies } from "next/headers"
+// app/auth/callback/route.ts
+import { getSupabaseServerClient as createClient } from "@/lib/supabase/server";
+import { NextRequest, NextResponse } from "next/server";
 
+export const dynamic = "force-dynamic";
+
+/**
+ * Auth Callback Route
+ * Handles email verification and role-based redirects
+ * 
+ * Flow:
+ * 1. User clicks email verification link
+ * 2. Supabase redirects to this callback with auth code
+ * 3. We exchange the code for a session
+ * 4. We check the user's role from the database
+ * 5. We redirect to the appropriate dashboard
+ */
 export async function GET(request: NextRequest) {
-    const requestUrl = new URL(request.url)
-    const code = requestUrl.searchParams.get("code")
-    const next = requestUrl.searchParams.get("next") || "/dashboard"
+  const requestUrl = new URL(request.url);
 
-    console.log("[Auth Callback] Processing callback")
-    console.log("[Auth Callback] Request URL:", request.url)
-    console.log("[Auth Callback] Code present:", !!code)
-    console.log("[Auth Callback] Next path:", next)
+  // Get the auth code from the URL (sent by Supabase)
+  const code = requestUrl.searchParams.get("code");
 
-    if (code) {
-        const cookieStore = await cookies()
+  // Check for 'next' param to detect password reset flow
+  const next = requestUrl.searchParams.get("next");
 
-        const supabase = createServerClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-            {
-                cookies: {
-                    getAll() {
-                        return cookieStore.getAll()
-                    },
-                    setAll(cookiesToSet) {
-                        cookiesToSet.forEach(({ name, value, options }) => {
-                            cookieStore.set(name, value, options)
-                        })
-                    },
-                },
-            }
-        )
+  // Get the origin for building redirect URLs
+  const origin = requestUrl.origin;
 
-        const { data, error } = await supabase.auth.exchangeCodeForSession(code)
+  // Special handling for password reset flow
+  // Password reset uses PKCE flow with tokens in hash fragment, not code exchange
+  if (next === "/auth/update-password") {
+    console.log("🔐 Password reset flow detected, redirecting to update-password page");
+    // Redirect to update-password page - hash fragment will be preserved by browser
+    return NextResponse.redirect(`${origin}/auth/update-password`);
+  }
 
-        if (!error) {
-            console.log("[Auth Callback] Session exchanged successfully")
-            console.log("[Auth Callback] Redirecting to:", `${requestUrl.origin}${next}`)
-            return NextResponse.redirect(`${requestUrl.origin}${next}`)
-        } else {
-            console.error("[Auth Callback] Error exchanging code:", error)
-        }
-    } else {
-        console.error("[Auth Callback] No code provided")
-        // Check for error description in params
-        const errorDescription = requestUrl.searchParams.get("error_description")
-        if (errorDescription) {
-            console.error("[Auth Callback] Error from provider:", errorDescription)
-        }
+  if (code) {
+    const supabase = await createClient();
+
+    try {
+      // Step 1: Exchange the code for a session
+      const { data: { session }, error: sessionError } = await supabase.auth.exchangeCodeForSession(code);
+
+      if (sessionError) {
+        console.error("Session exchange error:", sessionError);
+        // Redirect to login with error message
+        return NextResponse.redirect(`${origin}/auth/login?error=verification_failed`);
+      }
+
+      if (!session) {
+        return NextResponse.redirect(`${origin}/auth/login?error=no_session`);
+      }
+
+      // Step 2: Get the user's role from the public.users table
+      const { data: userData, error: userError } = await supabase
+        .from("users")
+        .select("role")
+        .eq("id", session.user.id)
+        .single();
+
+      if (userError) {
+        console.error("User data fetch error:", userError);
+        // If we can't get role, default to regular dashboard
+        return NextResponse.redirect(`${origin}/dashboard`);
+      }
+
+      // Check for 'next' param to redirect to specific page
+      if (next) {
+        console.log(`✅ Redirecting to: ${next}`);
+        return NextResponse.redirect(`${origin}${next}`);
+      }
+
+      // Step 3: Redirect based on user role
+      const roleRedirects: Record<string, string> = {
+        "advisor": "/advisor/dashboard",
+        "underwriting": "/underwriting/dashboard",
+        "premium": "/dashboard",
+        "free": "/dashboard",
+      };
+
+      const redirectPath = roleRedirects[userData.role] || "/dashboard";
+
+      console.log(`✅ User ${session.user.email} authenticated with role: ${userData.role}`);
+      console.log(`➡️  Redirecting to: ${redirectPath}`);
+
+      return NextResponse.redirect(`${origin}${redirectPath}`);
+
+    } catch (error) {
+      console.error("Auth callback error:", error);
+      return NextResponse.redirect(`${origin}/auth/login?error=callback_failed`);
     }
+  }
 
-    // Return the user to an error page with instructions
-    console.log("[Auth Callback] Redirecting to login with error")
-    return NextResponse.redirect(`${requestUrl.origin}/login?error=Could not authenticate user`)
+  // If no code is present, redirect to login
+  console.log("❌ No auth code found in callback");
+  return NextResponse.redirect(`${origin}/auth/login?error=no_code`);
 }

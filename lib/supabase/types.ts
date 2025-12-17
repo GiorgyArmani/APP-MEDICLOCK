@@ -222,6 +222,21 @@ export interface Database {
             referencedColumns: ["id"]
           }
         ]
+      },
+      users: {
+        Row: {
+          id: string
+          role: string
+        }
+        Insert: {
+          id: string
+          role: string
+        }
+        Update: {
+          id?: string
+          role?: string
+        }
+        Relationships: []
       }
     }
     Views: {}
