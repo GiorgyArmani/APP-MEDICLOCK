@@ -7,6 +7,11 @@ export async function GET(request: NextRequest) {
     const code = requestUrl.searchParams.get("code")
     const next = requestUrl.searchParams.get("next") || "/dashboard"
 
+    console.log("[Auth Callback] Processing callback")
+    console.log("[Auth Callback] Request URL:", request.url)
+    console.log("[Auth Callback] Code present:", !!code)
+    console.log("[Auth Callback] Next path:", next)
+
     if (code) {
         const cookieStore = await cookies()
 
@@ -27,13 +32,25 @@ export async function GET(request: NextRequest) {
             }
         )
 
-        const { error } = await supabase.auth.exchangeCodeForSession(code)
+        const { data, error } = await supabase.auth.exchangeCodeForSession(code)
 
         if (!error) {
+            console.log("[Auth Callback] Session exchanged successfully")
+            console.log("[Auth Callback] Redirecting to:", `${requestUrl.origin}${next}`)
             return NextResponse.redirect(`${requestUrl.origin}${next}`)
+        } else {
+            console.error("[Auth Callback] Error exchanging code:", error)
+        }
+    } else {
+        console.error("[Auth Callback] No code provided")
+        // Check for error description in params
+        const errorDescription = requestUrl.searchParams.get("error_description")
+        if (errorDescription) {
+            console.error("[Auth Callback] Error from provider:", errorDescription)
         }
     }
 
     // Return the user to an error page with instructions
+    console.log("[Auth Callback] Redirecting to login with error")
     return NextResponse.redirect(`${requestUrl.origin}/login?error=Could not authenticate user`)
 }
