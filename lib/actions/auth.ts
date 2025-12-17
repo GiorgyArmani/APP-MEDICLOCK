@@ -4,7 +4,7 @@ import { getSupabaseServerClient, getSupabaseAdminClient } from "@/lib/supabase/
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 import type { DoctorRole } from "@/lib/supabase/types"
-import { sendWelcomeEmail } from "@/lib/notifications/email"
+import { sendPasswordRecoveryEmail, sendWelcomeEmail } from "@/lib/notifications/email"
 
 export async function signUp(formData: {
   email: string
@@ -111,4 +111,51 @@ export async function getCurrentDoctor() {
   }
 
   return doctor
+}
+
+export async function forgotPassword(email: string) {
+  const adminSupabase = await getSupabaseAdminClient()
+
+  // 1. Generate recovery link
+  const { data, error } = await adminSupabase.auth.admin.generateLink({
+    type: "recovery",
+    email,
+    options: {
+      redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/auth/callback?next=/auth/update-password`,
+    },
+  })
+
+  if (error) {
+    console.error("Error generating recovery link:", error)
+    return { error: "No se pudo generar el enlace de recuperación. Verifica el correo." }
+  }
+
+  if (!data?.properties?.action_link) {
+    return { error: "Error al generar enlace." }
+  }
+
+  // 2. Send custom email
+  const emailResult = await sendPasswordRecoveryEmail(email, data.properties.action_link)
+
+  if (!emailResult.success) {
+    return { error: "Error al enviar el correo. Intenta nuevamente." }
+  }
+
+  return { success: true }
+}
+
+export async function updatePassword(password: string) {
+  const supabase = await getSupabaseServerClient()
+
+  const { error } = await supabase.auth.updateUser({
+    password: password,
+  })
+
+  if (error) {
+    console.error("Error updating password:", error)
+    return { error: error.message }
+  }
+
+  revalidatePath("/", "layout")
+  return { success: true }
 }

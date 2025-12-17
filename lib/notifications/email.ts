@@ -469,3 +469,52 @@ export async function sendMonthlyScheduleEmail(
       `
   )
 }
+
+/**
+ * Send password recovery email
+ */
+export async function sendPasswordRecoveryEmail(email: string, recoveryLink: string) {
+  return await sendEmail(
+    email,
+    "Recuperación de Contraseña - Medi Clock",
+    `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta charset="utf-8">
+            <style>
+              body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; }
+              .container { max-width: 600px; margin: 0 auto; padding: 0; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+              .header { background: #dc2626; color: white; padding: 24px; text-align: center; }
+              .content { padding: 32px; background: #fef2f2; }
+              .button { display: inline-block; background: #dc2626; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: 600; margin-top: 8px; text-align: center; }
+              .footer { text-align: center; padding: 24px; color: #94a3b8; font-size: 13px; background: white; border-top: 1px solid #e2e8f0; }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <div class="header">
+                <h1 style="margin: 0; font-size: 24px;">🔐 Recuperar Contraseña</h1>
+              </div>
+              <div class="content">
+                <p>Hola,</p>
+                <p>Hemos recibido una solicitud para restablecer tu contraseña en <strong>Medi Clock</strong>.</p>
+                <p>Si no has solicitado este cambio, puedes ignorar este correo. De lo contrario, haz clic en el botón de abajo para continuar:</p>
+                
+                <div style="text-align: center; margin-top: 24px; margin-bottom: 24px;">
+                  <a href="${recoveryLink}" class="button">
+                    Restablecer Contraseña
+                  </a>
+                </div>
+                
+                <p style="font-size: 14px; color: #666;">Este enlace expirará en 24 horas.</p>
+              </div>
+              <div class="footer">
+                <p>Este es un correo automático de Medi Clock.</p>
+              </div>
+            </div>
+          </body>
+        </html>
+      `
+  )
+}
