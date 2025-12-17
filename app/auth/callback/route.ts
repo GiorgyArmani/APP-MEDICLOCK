@@ -45,11 +45,11 @@ export async function GET(request: NextRequest) {
       if (sessionError) {
         console.error("Session exchange error:", sessionError);
         // Redirect to login with error message
-        return NextResponse.redirect(`${origin}/auth/login?error=verification_failed`);
+        return NextResponse.redirect(`${origin}/login?error=verification_failed`);
       }
 
       if (!session) {
-        return NextResponse.redirect(`${origin}/auth/login?error=no_session`);
+        return NextResponse.redirect(`${origin}/login?error=no_session`);
       }
 
       // Step 2: Get the user's role from the public.users table
@@ -88,11 +88,11 @@ export async function GET(request: NextRequest) {
 
     } catch (error) {
       console.error("Auth callback error:", error);
-      return NextResponse.redirect(`${origin}/auth/login?error=callback_failed`);
+      return NextResponse.redirect(`${origin}/login?error=callback_failed`);
     }
   }
 
   // If no code is present, redirect to login
   console.log("❌ No auth code found in callback");
-  return NextResponse.redirect(`${origin}/auth/login?error=no_code`);
+  return NextResponse.redirect(`${origin}/login?error=no_code`);
 }

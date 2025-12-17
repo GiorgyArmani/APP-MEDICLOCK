@@ -100,7 +100,7 @@ export function UpdatePasswordForm({
 
       // Redirect to login page
       setTimeout(() => {
-        router.push("/auth/login");
+        router.push("/login");
       }, 1500);
 
     } catch (error: unknown) {

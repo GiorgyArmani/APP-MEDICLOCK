@@ -32,7 +32,7 @@ export default function SetPasswordPage() {
           const { error } = await supabase.auth.exchangeCodeForSession(code);
           if (error) {
             // si el code es inválido/expiró mandamos al login
-            router.replace("/auth/login");
+            router.replace("/login");
             return;
           }
           // limpiar la URL
@@ -46,7 +46,7 @@ export default function SetPasswordPage() {
       // 2) Obtener usuario ya autenticado por el code
       const { data: { user } } = await supabase.auth.getUser();
       setLoading(false);
-      if (!user) { router.replace("/auth/login"); return; }
+      if (!user) { router.replace("/login"); return; }
 
       setEmail(user.email ?? null);
       setMustSet(Boolean(user.user_metadata?.must_set_password));
