@@ -18,8 +18,17 @@ export default async function ShiftsPage() {
     // Filter to show assigned shifts and free shifts
     const myShifts = allShifts.filter((s) => s.doctor_id === doctor.id)
 
-    // ALL doctors can see ALL free shifts
-    const freeShifts = allShifts.filter((s) => s.shift_type === "free")
+    // Filter accessible free shifts
+    const freeShifts = allShifts.filter((s) => {
+        if (s.shift_type !== "free") return false
+
+        // Completo sees everything
+        if (doctor.role === 'completo') return true
+
+        // Others see if they are in the pool
+        const pool = s.assigned_to_pool || []
+        return pool.includes(doctor.role)
+    })
 
     return (
         <div className="container mx-auto px-4 py-8 space-y-6">

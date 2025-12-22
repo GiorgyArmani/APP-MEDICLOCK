@@ -18,19 +18,32 @@ export default async function DashboardPage() {
   // TypeScript now knows currentDoctor is Doctor (not null) after the check above
   const doctor = currentDoctor as Doctor
 
-  // Fetch shifts based on role
-  const shifts = doctor.role === "administrator"
-    ? await getShifts()
-    : await getShiftsByDoctor(doctor.id)
+  // Fetch ALL shifts to determine visibility correctly (matching shifts page logic)
+  const allShifts = await getShifts()
 
   // Filter shifts for role-based visibility
+  // 1. Admin sees everything
+  // 2. Doctors see:
+  //    a. Their own assigned shifts
+  //    b. Free shifts that match their role pool (or if they are Completo)
   const visibleShifts = doctor.role === "administrator"
-    ? shifts
-    : shifts.filter(
-      (s) =>
-        s.doctor_id === doctor.id ||
-        (s.shift_type === "free" && s.assigned_to_pool?.includes(doctor.role))
-    )
+    ? allShifts
+    : allShifts.filter((s) => {
+      // Own shifts
+      if (s.doctor_id === doctor.id) return true
+
+      // Free shifts logic
+      if (s.shift_type === "free") {
+        // Completo sees all free shifts
+        if (doctor.role === 'completo') return true
+
+        // Check pool
+        const pool = s.assigned_to_pool || []
+        return pool.includes(doctor.role)
+      }
+
+      return false
+    })
 
   return (
     <div className="min-h-screen bg-slate-50">

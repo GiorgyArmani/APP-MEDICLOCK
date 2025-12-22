@@ -16,24 +16,39 @@ const transporter = nodemailer.createTransport({
 
 const FROM_EMAIL = process.env.SMTP_FROM || process.env.SMTP_USER || 'admin@mediclock.click'
 
-async function sendEmail(to: string, subject: string, html: string) {
+async function sendEmail(to: string, subject: string, html: string, bcc?: string[]) {
+  // Development mode: Skip actual email sending to preserve quota
+  if (process.env.DISABLE_EMAILS === 'true') {
+    console.log(`[Email - DEV MODE] Would send email:`)
+    console.log(`  To: ${to}`)
+    if (bcc && bcc.length > 0) {
+      console.log(`  BCC: ${bcc.length} recipients - ${bcc.join(', ')}`)
+    }
+    console.log(`  Subject: ${subject}`)
+    console.log(`  HTML Length: ${html.length} characters`)
+    console.log(`[Email - DEV MODE] ✅ Email logged (not sent - quota preserved)`)
+    return { success: true, emailId: 'dev-mode-' + Date.now() }
+  }
+
   if (!process.env.SMTP_USER || !process.env.SMTP_PASSWORD) {
     console.error('[Email] Missing SMTP credentials')
     return { success: false, error: 'Missing SMTP credentials' }
   }
 
   try {
+    console.log(`[Email] Attempting to send to: ${to}${bcc ? ` (BCC: ${bcc.length} recipients)` : ''} | Subject: ${subject}`)
     const info = await transporter.sendMail({
       from: `"Medi Clock" <${FROM_EMAIL}>`,
       to,
+      bcc,
       subject,
       html,
     })
 
-    console.log('[Email] Sent successfully:', info.messageId)
+    console.log(`[Email] Sent successfully. MessageId: ${info.messageId}`)
     return { success: true, emailId: info.messageId }
   } catch (error) {
-    console.error('[Email] Error:', error)
+    console.error(`[Email] Error sending email:`, error)
     return { success: false, error }
   }
 }
@@ -123,6 +138,105 @@ export async function sendShiftAssignmentEmail(data: ShiftEmailData) {
       `
   )
 }
+
+/**
+ * Send recurring shift series assignment email (consolidates multiple shifts into one email)
+ */
+export async function sendRecurringShiftAssignmentEmail(
+  doctorEmail: string,
+  doctorName: string,
+  shiftCategory: string,
+  shiftArea: string,
+  shiftHours: string,
+  shifts: { date: string; notes?: string }[],
+  notes?: string
+) {
+  const shiftsRows = shifts
+    .map(
+      (shift) => `
+    <tr style="border-bottom: 1px solid #e2e8f0;">
+      <td style="padding: 12px; font-weight: 500;">${shift.date}</td>
+      <td style="padding: 12px;">${shiftHours}</td>
+      <td style="padding: 12px;">${shiftArea}</td>
+      ${shift.notes ? `<td style="padding: 12px; font-size: 13px; color: #64748b;">${shift.notes}</td>` : '<td style="padding: 12px;">-</td>'}
+    </tr>
+  `
+    )
+    .join("")
+
+  return await sendEmail(
+    doctorEmail,
+    `Nueva Serie de Guardias Asignadas - ${shiftCategory}`,
+    `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta charset="utf-8">
+            <style>
+              body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; }
+              .container { max-width: 600px; margin: 0 auto; padding: 0; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+              .header { background: #2563eb; color: white; padding: 24px; text-align: center; }
+              .content { padding: 32px; background: #f8fafc; }
+              .info-box { background: #dbeafe; border-left: 4px solid #2563eb; padding: 16px; border-radius: 8px; margin: 24px 0; }
+              .schedule-box { background: white; padding: 0; border-radius: 12px; border: 1px solid #e2e8f0; margin: 24px 0; overflow: hidden; }
+              .button { display: inline-block; background: #2563eb; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: 600; margin-top: 8px; text-align: center; }
+              .footer { text-align: center; padding: 24px; color: #94a3b8; font-size: 13px; background: white; border-top: 1px solid #e2e8f0; }
+              table { width: 100%; border-collapse: collapse; text-align: left; font-size: 14px; }
+              th { background: #f1f5f9; padding: 12px; font-weight: 600; color: #64748b; }
+              .badge { display: inline-block; background: #e0e7ff; color: #3730a3; padding: 4px 12px; border-radius: 16px; font-weight: 600; font-size: 13px; }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <div class="header">
+                <h1 style="margin: 0; font-size: 24px;">🏥 Nueva Serie de Guardias Asignadas</h1>
+              </div>
+              <div class="content">
+                <p>Hola <strong>${doctorName}</strong>,</p>
+                <p>Se te ha asignado una serie de <strong>${shifts.length} guardias recurrentes</strong> en <strong>Medi Clock</strong>. A continuación encontrarás el cronograma completo:</p>
+                
+                <div class="info-box">
+                  <p style="margin: 8px 0;"><strong>📋 Tipo:</strong> ${shiftCategory}</p>
+                  <p style="margin: 8px 0;"><strong>⏰ Horario:</strong> ${shiftHours}</p>
+                  <p style="margin: 8px 0;"><strong>🏢 Área:</strong> ${shiftArea}</p>
+                  <p style="margin: 8px 0;"><strong>🔄 Frecuencia:</strong> <span class="badge">RECURRENTE</span></p>
+                  ${notes ? `<p style="margin: 8px 0;"><strong>📝 Notas:</strong> ${notes}</p>` : ''}
+                </div>
+
+                <div class="schedule-box">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Fecha</th>
+                        <th>Horario</th>
+                        <th>Área</th>
+                        <th>Notas</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${shiftsRows}
+                    </tbody>
+                  </table>
+                </div>
+
+                <p style="font-size: 14px; color: #64748b;">Todas estas guardias han sido agregadas a tu calendario. Puedes verlas y gestionarlas desde el panel de control.</p>
+                
+                <div style="text-align: center;">
+                  <a href="${process.env.NEXT_PUBLIC_SITE_URL || 'https://mediclock.click'}/dashboard" class="button">
+                    Ver en Medi Clock
+                  </a>
+                </div>
+              </div>
+              <div class="footer">
+                <p>Este es un correo automático de Medi Clock. Por favor no respondas a este mensaje.</p>
+              </div>
+            </div>
+          </body>
+        </html>
+      `
+  )
+}
+
 
 /**
  * Send shift reminder email (24h before)
@@ -245,18 +359,21 @@ export async function sendStatusChangeEmail(
 }
 
 /**
- * Send free shift alert
+ * Send free shift alert to multiple doctors using BCC to avoid ratelimits
  */
-export async function sendFreeShiftAlert(
-  doctorEmail: string,
-  doctorName: string,
+export async function sendBulkFreeShiftAlert(
+  doctorEmails: string[],
   shiftCategory: string,
   shiftArea: string,
   shiftHours: string,
   shiftDate: string
 ) {
+  if (doctorEmails.length === 0) return { success: true }
+
+  // Use the first email as 'to' or the admin email, and the rest as BCC
+  // Actually, sent to FROM_EMAIL and BCC everyone for privacy and efficiency
   return await sendEmail(
-    doctorEmail,
+    FROM_EMAIL,
     `Nueva Guardia Libre Disponible - ${shiftDate}`,
     `
         <!DOCTYPE html>
@@ -283,8 +400,8 @@ export async function sendFreeShiftAlert(
                 <h1 style="margin: 0; font-size: 24px;">🆓 Nueva Guardia Libre</h1>
               </div>
               <div class="content">
-                <p>Hola <strong>${doctorName}</strong>,</p>
-                <p>Hay una nueva guardia libre disponible para tu rol. ¡Sé el primero en aceptarla!</p>
+                <p>Hola,</p>
+                <p>Hay una nueva guardia libre disponible para tu rol en <strong>Medi Clock</strong>. ¡Sé el primero en aceptarla!</p>
                 
                 <div class="shift-card">
                   <div class="detail-row">
@@ -306,7 +423,7 @@ export async function sendFreeShiftAlert(
                 </div>
                 
                 <div style="text-align: center;">
-                  <a href="${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/dashboard" class="button">
+                  <a href="${process.env.NEXT_PUBLIC_SITE_URL || 'https://mediclock.click'}/dashboard" class="button">
                     Aceptar Guardia
                   </a>
                 </div>
@@ -317,9 +434,11 @@ export async function sendFreeShiftAlert(
             </div>
           </body>
         </html>
-      `
+      `,
+    doctorEmails
   )
 }
+
 
 /**
  * Send welcome email to new doctor

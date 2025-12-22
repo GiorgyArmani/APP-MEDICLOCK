@@ -2,7 +2,7 @@
 
 import { getSupabaseAdminClient } from "@/lib/supabase/server"
 import { revalidatePath } from "next/cache"
-import { sendFreeShiftAlert } from "@/lib/notifications/email"
+import { sendBulkFreeShiftAlert } from "@/lib/notifications/email"
 import { getDoctors } from "./doctors"
 import type { Shift } from "@/lib/supabase/types"
 
@@ -47,21 +47,31 @@ export async function cancelShift(shiftId: string) {
         notes: "Guardia liberada por el médico",
     })
 
-    // Notify all doctors about the free shift
-    const doctors = await getDoctors()
-    const shiftData = shift as Shift
+    // Notify relevant doctors about the free shift (Pool + Completo)
+    const { data: poolDoctors } = await supabase
+        .from("doctors")
+        .select("email")
+        .in("role", shift.assigned_to_pool || [])
 
-    // Send email to all doctors
-    doctors.forEach((doctor) => {
-        sendFreeShiftAlert(
-            doctor.email,
-            doctor.full_name,
-            shiftData.shift_category,
-            shiftData.shift_area,
-            shiftData.shift_hours,
-            shiftData.shift_date
-        ).catch((err) => console.error("Error sending free shift alert:", err))
-    })
+    const { data: completoDoctors } = await supabase
+        .from("doctors")
+        .select("email")
+        .eq("role", "completo")
+
+    const emails = Array.from(new Set([
+        ...(poolDoctors?.map(d => d.email) || []),
+        ...(completoDoctors?.map(d => d.email) || [])
+    ]))
+
+    if (emails.length > 0) {
+        await sendBulkFreeShiftAlert(
+            emails,
+            shift.shift_category,
+            shift.shift_area,
+            shift.shift_hours,
+            shift.shift_date
+        )
+    }
 
     revalidatePath("/dashboard")
     revalidatePath("/dashboard/shifts")

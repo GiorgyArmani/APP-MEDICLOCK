@@ -15,7 +15,6 @@ export function AdminShiftsList({ shifts, doctors }: AdminShiftsListProps) {
   const newShifts = shifts.filter((s) => s.status === "new")
   const freeShifts = shifts.filter((s) => s.status === "free" || s.status === "free_pending")
   const confirmedShifts = shifts.filter((s) => s.status === "confirmed")
-  const rejectedShifts = shifts.filter((s) => s.status === "rejected")
 
   return (
     <Card>
@@ -25,12 +24,11 @@ export function AdminShiftsList({ shifts, doctors }: AdminShiftsListProps) {
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="all" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4">
             <TabsTrigger value="all">Todas ({shifts.length})</TabsTrigger>
             <TabsTrigger value="new">Nuevas ({newShifts.length})</TabsTrigger>
             <TabsTrigger value="free">Libres ({freeShifts.length})</TabsTrigger>
             <TabsTrigger value="confirmed">Confirmadas ({confirmedShifts.length})</TabsTrigger>
-            <TabsTrigger value="rejected">Rechazadas ({rejectedShifts.length})</TabsTrigger>
           </TabsList>
 
           <TabsContent value="all" className="space-y-4 mt-6">
@@ -62,14 +60,6 @@ export function AdminShiftsList({ shifts, doctors }: AdminShiftsListProps) {
               <p className="text-center text-slate-500 py-8">No hay guardias confirmadas</p>
             ) : (
               confirmedShifts.map((shift) => <AdminShiftCard key={shift.id} shift={shift} doctors={doctors} />)
-            )}
-          </TabsContent>
-
-          <TabsContent value="rejected" className="space-y-4 mt-6">
-            {rejectedShifts.length === 0 ? (
-              <p className="text-center text-slate-500 py-8">No hay guardias rechazadas</p>
-            ) : (
-              rejectedShifts.map((shift) => <AdminShiftCard key={shift.id} shift={shift} doctors={doctors} />)
             )}
           </TabsContent>
         </Tabs>
