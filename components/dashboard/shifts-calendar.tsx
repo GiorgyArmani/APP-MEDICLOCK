@@ -10,6 +10,9 @@ import { CalendarHeader } from "./calendar/calendar-header"
 import { MonthView } from "./calendar/month-view"
 import { WeekView } from "./calendar/week-view"
 import { DayView } from "./calendar/day-view"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { FilterX, User, MapPin, Tag } from "lucide-react"
+import { Button } from "@/components/ui/button"
 
 interface ShiftsCalendarProps {
   shifts: Shift[]
@@ -20,23 +23,32 @@ export function ShiftsCalendar({ shifts, ...props }: ShiftsCalendarProps) {
   const [currentDate, setCurrentDate] = useState(new Date())
   const [view, setView] = useState<"month" | "week" | "day">("month")
 
+  // Filter State
+  const [filterDoctorId, setFilterDoctorId] = useState<string>("all")
+  const [filterArea, setFilterArea] = useState<string>("all")
+  const [filterStatus, setFilterStatus] = useState<string>("all")
+
   // Dialog State
   const [selectedShifts, setSelectedShifts] = useState<Shift[]>([])
   const [selectedDoctorId, setSelectedDoctorId] = useState<string>("")
   const [isDialogOpen, setIsDialogOpen] = useState(false)
 
+  // Filtering Logic
+  const filteredShifts = shifts.filter((shift) => {
+    const matchesDoctor = filterDoctorId === "all" || shift.doctor_id === filterDoctorId
+    const matchesArea = filterArea === "all" || shift.shift_area === filterArea
+    const matchesStatus = filterStatus === "all" || shift.status === filterStatus
+    return matchesDoctor && matchesArea && matchesStatus
+  })
+
   // Handlers
   const handleDayClick = (dayShifts: Shift[], date: Date) => {
-    // If in month view, clicking a day switches to day view
     if (view === "month") {
       setCurrentDate(date)
       setView("day")
       return
     }
 
-    // Otherwise (if we keep this handler for other views), existing logic?
-    // WeekView now uses onShiftClick for shifts, onDayClick(date) for background.
-    // If this is triggered with shifts, it implies "show details". 
     if (dayShifts.length > 0) {
       setSelectedShifts(dayShifts)
       setSelectedDoctorId(dayShifts[0]?.doctor_id || "")
@@ -50,13 +62,18 @@ export function ShiftsCalendar({ shifts, ...props }: ShiftsCalendarProps) {
     setIsDialogOpen(true)
   }
 
-  // Week View specific backend click (empty slot) - optional
   const handleWeekDayClick = (date: Date) => {
-    // Could open "Create Shift" dialog pre-filled with this date
-    // For now, no-op or switch to day view?
     setCurrentDate(date)
     setView("day")
   }
+
+  const clearFilters = () => {
+    setFilterDoctorId("all")
+    setFilterArea("all")
+    setFilterStatus("all")
+  }
+
+  const hasFilters = filterDoctorId !== "all" || filterArea !== "all" || filterStatus !== "all"
 
   return (
     <>
@@ -70,15 +87,91 @@ export function ShiftsCalendar({ shifts, ...props }: ShiftsCalendarProps) {
           onToday={() => setCurrentDate(new Date())}
         />
 
-        <CardContent className="pt-6 flex-1">
-          {/* View Legend - Only show for Month/Week maybe? Or always? */}
-          <div className="bg-slate-50 rounded-lg p-3 mb-4 border border-slate-200 lg:w-fit">
-            <div className="flex flex-wrap gap-3">
-              <StatusBadge color="bg-orange-500 animate-pulse" label="Pendiente" />
+        <CardContent className="pt-6 flex-1 space-y-6">
+          {/* Admin Filters Row */}
+          {props.doctors && (
+            <div className="flex flex-wrap items-end gap-4 p-4 bg-slate-50 rounded-xl border border-slate-200">
+              <div className="space-y-2">
+                <label className="text-xs font-semibold text-slate-500 flex items-center gap-1.5 ml-1">
+                  <User className="w-3 h-3" />
+                  Médico
+                </label>
+                <Select value={filterDoctorId} onValueChange={setFilterDoctorId}>
+                  <SelectTrigger className="w-[200px] bg-white">
+                    <SelectValue placeholder="Todos los médicos" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos los médicos</SelectItem>
+                    {props.doctors.map((doctor) => (
+                      <SelectItem key={doctor.id} value={doctor.id}>
+                        {doctor.full_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs font-semibold text-slate-500 flex items-center gap-1.5 ml-1">
+                  <MapPin className="w-3 h-3" />
+                  Área
+                </label>
+                <Select value={filterArea} onValueChange={setFilterArea}>
+                  <SelectTrigger className="w-[160px] bg-white">
+                    <SelectValue placeholder="Todas las áreas" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todas las áreas</SelectItem>
+                    <SelectItem value="consultorio">Consultorio</SelectItem>
+                    <SelectItem value="internacion">Internación</SelectItem>
+                    <SelectItem value="refuerzo">Refuerzo</SelectItem>
+                    <SelectItem value="completo">Completo</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs font-semibold text-slate-500 flex items-center gap-1.5 ml-1">
+                  <Tag className="w-3 h-3" />
+                  Estado
+                </label>
+                <Select value={filterStatus} onValueChange={setFilterStatus}>
+                  <SelectTrigger className="w-[160px] bg-white">
+                    <SelectValue placeholder="Todos los estados" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos los estados</SelectItem>
+                    <SelectItem value="new">Pendiente</SelectItem>
+                    <SelectItem value="confirmed">Confirmada</SelectItem>
+                    <SelectItem value="free">Libre</SelectItem>
+                    <SelectItem value="rejected">Rechazada</SelectItem>
+                    <SelectItem value="free_pending">Pendiente +12h</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {hasFilters && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={clearFilters}
+                  className="text-slate-500 hover:text-rose-600 hover:bg-rose-50 mb-0.5"
+                >
+                  <FilterX className="w-4 h-4 mr-2" />
+                  Limpiar
+                </Button>
+              )}
+            </div>
+          )}
+
+          {/* View Legend */}
+          <div className="bg-slate-50/50 rounded-lg p-3 border border-slate-100 lg:w-fit">
+            <div className="flex flex-wrap gap-4">
+              <StatusBadge color="bg-orange-500" label="Pendiente" />
               <StatusBadge color="bg-purple-500" label="Libre" />
               <StatusBadge color="bg-emerald-500" label="Confirmada" />
               <StatusBadge color="bg-rose-500" label="Rechazada" />
-              <StatusBadge color="bg-amber-500 animate-pulse" label="Pendiente +12h" />
+              <StatusBadge color="bg-amber-500" label="Pendiente +12h" />
             </div>
           </div>
 
@@ -86,7 +179,7 @@ export function ShiftsCalendar({ shifts, ...props }: ShiftsCalendarProps) {
           {view === "month" && (
             <MonthView
               currentDate={currentDate}
-              shifts={shifts}
+              shifts={filteredShifts}
               onDayClick={handleDayClick}
             />
           )}
@@ -94,7 +187,7 @@ export function ShiftsCalendar({ shifts, ...props }: ShiftsCalendarProps) {
           {view === "week" && (
             <WeekView
               currentDate={currentDate}
-              shifts={shifts}
+              shifts={filteredShifts}
               onDayClick={handleWeekDayClick}
               onShiftClick={handleShiftClick}
             />
@@ -103,7 +196,7 @@ export function ShiftsCalendar({ shifts, ...props }: ShiftsCalendarProps) {
           {view === "day" && (
             <DayView
               currentDate={currentDate}
-              shifts={shifts}
+              shifts={filteredShifts}
               onShiftClick={handleShiftClick}
             />
           )}

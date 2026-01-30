@@ -5,17 +5,12 @@ import { getDoctors } from "@/lib/actions/doctors"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Calendar, Users } from "lucide-react"
 import { CreateShiftDialog } from "@/components/admin/create-shift-dialog"
-import { AdminTabs } from "@/components/admin/admin-tabs"
 import type { Doctor } from "@/lib/supabase/types"
 
-interface AdminPageProps {
-  searchParams: { tab?: string }
-}
+import { AdminShiftsList } from "@/components/admin/admin-shifts-list"
 
-export default async function AdminPage({ searchParams }: AdminPageProps) {
+export default async function AdminPage() {
   const currentDoctor = await getCurrentDoctor()
-  const { tab } = await searchParams
-  const defaultTab = tab || "list"
 
   // Redirect if not authenticated or not admin
   if (!currentDoctor) {
@@ -98,9 +93,11 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
           </Card>
         </div>
 
-        {/* Tabs */}
-        <AdminTabs shifts={shifts} doctors={doctors} defaultTab={defaultTab} />
-      </main>
-    </div>
+        {/* Shifts List Section */}
+        <div className="space-y-4">
+          <AdminShiftsList shifts={shifts} doctors={doctors} />
+        </div>
+      </main >
+    </div >
   )
 }

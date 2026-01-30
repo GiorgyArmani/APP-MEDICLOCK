@@ -57,26 +57,15 @@ export default async function DashboardPage() {
 
         <StatsCards shifts={visibleShifts} />
 
-        <Tabs defaultValue="list" className="w-full">
-          <TabsList className="grid w-full max-w-md grid-cols-2">
-            <TabsTrigger value="list" className="flex items-center gap-2">
-              <List className="h-4 w-4" />
-              Lista
-            </TabsTrigger>
-            <TabsTrigger value="calendar" className="flex items-center gap-2">
-              <Calendar className="h-4 w-4" />
-              Calendario
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="list" className="mt-6">
-            <ShiftsList shifts={visibleShifts} currentDoctor={doctor} />
-          </TabsContent>
-
-          <TabsContent value="calendar" className="mt-6">
-            <ShiftsCalendar shifts={visibleShifts} />
-          </TabsContent>
-        </Tabs>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-semibold text-slate-900 flex items-center gap-2">
+              <List className="h-5 w-5 text-slate-600" />
+              Lista de Guardias
+            </h2>
+          </div>
+          <ShiftsList shifts={visibleShifts} currentDoctor={doctor} />
+        </div>
       </main>
     </div>
   )

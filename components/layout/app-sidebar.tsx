@@ -30,12 +30,13 @@ export function AppSidebar({ doctor }: AppSidebarProps) {
     const navItems = isAdmin
         ? [
             { href: "/admin", label: "Panel", icon: LayoutDashboard },
-            { href: "/admin?tab=calendar", label: "Calendario", icon: Calendar },
+            { href: "/admin/calendar", label: "Calendario", icon: Calendar },
             { href: "/admin/doctors", label: "Médicos", icon: Users },
         ]
         : [
             { href: "/dashboard", label: "Panel", icon: LayoutDashboard },
-            { href: "/dashboard/shifts", label: "Guardias", icon: Calendar },
+            { href: "/dashboard/calendar", label: "Calendario", icon: Calendar },
+            { href: "/dashboard/shifts", label: "Guardias", icon: Users },
             { href: "/dashboard/availability", label: "Disponibilidad", icon: Clock },
         ]
 
