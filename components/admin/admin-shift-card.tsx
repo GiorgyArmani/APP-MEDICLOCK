@@ -100,10 +100,31 @@ export function AdminShiftCard({ shift, doctors }: AdminShiftCardProps) {
                         </div>
                     </div>
 
+                    {(shift.clock_in || shift.clock_out) && (
+                        <div className="mt-2 pt-2 border-t border-slate-100 grid grid-cols-2 gap-2">
+                            <div className="text-xs">
+                                <span className="font-semibold text-emerald-700 block">Entrada</span>
+                                {shift.clock_in ? new Date(shift.clock_in).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) : '-'}
+                            </div>
+                            <div className="text-xs">
+                                <span className="font-semibold text-blue-700 block">Salida</span>
+                                {shift.clock_out ? new Date(shift.clock_out).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) : '-'}
+                            </div>
+                        </div>
+                    )}
+
                     {shift.notes && (
                         <div className="mb-4 p-3 bg-slate-50 rounded-md">
                             <p className="text-sm text-slate-700">
                                 <span className="font-medium">Notas:</span> {shift.notes}
+                            </p>
+                        </div>
+                    )}
+
+                    {shift.doctor_notes && (
+                        <div className="mb-4 p-3 bg-yellow-50 rounded-md border border-yellow-200">
+                            <p className="text-sm text-yellow-900">
+                                <span className="font-medium">Notas del Médico:</span> {shift.doctor_notes}
                             </p>
                         </div>
                     )}

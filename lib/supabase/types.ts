@@ -59,6 +59,9 @@ export interface Database {
           created_at: string
           updated_at: string
           recurrence_id: string | null
+          clock_in: string | null
+          clock_out: string | null
+          doctor_notes: string | null
         }
         Insert: {
           id?: string
@@ -75,6 +78,9 @@ export interface Database {
           created_at?: string
           updated_at?: string
           recurrence_id?: string | null
+          clock_in?: string | null
+          clock_out?: string | null
+          doctor_notes?: string | null
         }
         Update: {
           id?: string
@@ -91,6 +97,9 @@ export interface Database {
           created_at?: string
           updated_at?: string
           recurrence_id?: string | null
+          clock_in?: string | null
+          clock_out?: string | null
+          doctor_notes?: string | null
         }
         Relationships: [
           {

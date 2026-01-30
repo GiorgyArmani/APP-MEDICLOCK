@@ -2,13 +2,15 @@
 
 import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
-import { updateShiftStatus, acceptFreeShift } from "@/lib/actions/shifts"
+import { updateShiftStatus, acceptFreeShift, clockIn, clockOut, saveDoctorNotes } from "@/lib/actions/shifts"
 import { cancelShift } from "@/lib/actions/cancel-shift"
 import { SHIFT_TYPES } from "@/lib/constants/shift-types"
 import type { Shift } from "@/lib/supabase/types"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { Textarea } from "@/components/ui/textarea"
+import { Label } from "@/components/ui/label"
 import { Calendar, Clock, CheckCircle2, XCircle, Users, AlertCircle, MapPin } from "lucide-react"
 import { toast } from "sonner"
 
@@ -19,6 +21,7 @@ interface ShiftCardProps {
 
 export function ShiftCard({ shift, doctorId }: ShiftCardProps) {
   const [isPending, startTransition] = useTransition()
+  const [doctorNotes, setDoctorNotes] = useState(shift.doctor_notes || "")
   const router = useRouter()
 
   const handleStatusUpdate = async (status: "confirmed" | "rejected") => {
@@ -64,6 +67,42 @@ export function ShiftCard({ shift, doctorId }: ShiftCardProps) {
         toast.error(`Error: ${result.error}`)
       } else {
         toast.success("Guardia cancelada y liberada para otros médicos")
+        router.refresh()
+      }
+    })
+  }
+
+  const handleClockIn = async () => {
+    startTransition(async () => {
+      const result = await clockIn(shift.id, doctorId)
+      if (result.error) {
+        toast.error(`Error: ${result.error}`)
+      } else {
+        toast.success("Entrada registrada exitosamente")
+        router.refresh()
+      }
+    })
+  }
+
+  const handleClockOut = async () => {
+    startTransition(async () => {
+      const result = await clockOut(shift.id, doctorId)
+      if (result.error) {
+        toast.error(`Error: ${result.error}`)
+      } else {
+        toast.success("Salida registrada exitosamente")
+        router.refresh()
+      }
+    })
+  }
+
+  const handleSaveNotes = async () => {
+    startTransition(async () => {
+      const result = await saveDoctorNotes(shift.id, doctorId, doctorNotes)
+      if (result.error) {
+        toast.error(`Error: ${result.error}`)
+      } else {
+        toast.success("Notas guardadas correctamente")
         router.refresh()
       }
     })
@@ -197,12 +236,76 @@ export function ShiftCard({ shift, doctorId }: ShiftCardProps) {
         )}
 
         {shift.status === "confirmed" && isAssignedToMe && (
-          <div className="flex gap-3 pt-4 border-t border-slate-200">
+          <div className="flex flex-col gap-3 pt-4 border-t border-slate-200">
+            {/* Clock In / Out Logic */}
+            {!shift.clock_in && (
+              // Simple logic: Allow clock in if confirmed. 
+              // Ideally check date, but backend does loose check. UI can be strict or loose.
+              // Let's simple check if it's today or generally allowed.
+              <Button
+                onClick={handleClockIn}
+                disabled={isPending}
+                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white"
+              >
+                <Clock className="h-4 w-4 mr-2" />
+                Marcar Entrada (Check-In)
+              </Button>
+            )}
+
+            {shift.clock_in && !shift.clock_out && (
+              <div className="space-y-2">
+                <div className="text-sm text-center text-emerald-700 font-medium bg-emerald-50 p-2 rounded">
+                  Entrada: {new Date(shift.clock_in).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
+                </div>
+                <Button
+                  onClick={handleClockOut}
+                  disabled={isPending}
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  <Clock className="h-4 w-4 mr-2" />
+                  Marcar Salida (Check-Out)
+                </Button>
+              </div>
+            )}
+
+            {shift.clock_in && shift.clock_out && (
+              <div className="grid grid-cols-2 gap-2 text-sm text-center bg-slate-50 p-2 rounded">
+                <div className="text-emerald-700">
+                  <span className="block text-xs font-semibold uppercase">Entrada</span>
+                  {new Date(shift.clock_in).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
+                </div>
+                <div className="text-blue-700">
+                  <span className="block text-xs font-semibold uppercase">Salida</span>
+                  {new Date(shift.clock_out).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
+                </div>
+              </div>
+            )}
+
+            <div className="pt-2 pb-2">
+              <Label htmlFor={`notes-${shift.id}`} className="text-sm font-medium mb-2 block">Mis Notas del Turno</Label>
+              <Textarea
+                id={`notes-${shift.id}`}
+                placeholder="Escriba aquí notas sobre el turno, pacientes, novedades..."
+                value={doctorNotes}
+                onChange={(e) => setDoctorNotes(e.target.value)}
+                className="mb-2 bg-white"
+              />
+              <Button
+                onClick={handleSaveNotes}
+                disabled={isPending}
+                variant="secondary"
+                size="sm"
+                className="w-full"
+              >
+                Guardar Notas
+              </Button>
+            </div>
+
             <Button
               onClick={handleCancelShift}
               disabled={isPending}
               variant="outline"
-              className="flex-1 border-orange-300 text-orange-700 hover:bg-orange-50"
+              className="w-full border-orange-300 text-orange-700 hover:bg-orange-50"
             >
               <XCircle className="h-4 w-4 mr-2" />
               Cancelar Guardia

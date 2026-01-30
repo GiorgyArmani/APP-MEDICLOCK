@@ -145,21 +145,13 @@ export async function createShift(shiftData: CreateShiftParams) {
 
     // For recurring FREE shifts, only notify once for the first shift
     const firstShift = insertedShifts[0]
-    if (firstShift.shift_type === "free" && firstShift.assigned_to_pool && firstShift.assigned_to_pool.length > 0) {
-      const { data: poolDoctors } = await supabase
+    if (firstShift.shift_type === "free") {
+      // Notify ALL doctors about the free shift
+      const { data: allDoctors } = await supabase
         .from("doctors")
         .select("email")
-        .in("role", firstShift.assigned_to_pool)
 
-      const { data: completoDoctors } = await supabase
-        .from("doctors")
-        .select("email")
-        .eq("role", "completo")
-
-      const uniqueEmails = Array.from(new Set([
-        ...(poolDoctors?.map(d => d.email) || []),
-        ...(completoDoctors?.map(d => d.email) || [])
-      ]))
+      const uniqueEmails = Array.from(new Set(allDoctors?.map(d => d.email) || []))
 
       if (uniqueEmails.length > 0) {
         await sendBulkFreeShiftAlert(
@@ -196,21 +188,13 @@ export async function createShift(shiftData: CreateShiftParams) {
       }
 
       // Free shift alerts
-      if (shift.shift_type === "free" && shift.assigned_to_pool && shift.assigned_to_pool.length > 0) {
-        const { data: poolDoctors } = await supabase
+      if (shift.shift_type === "free") {
+        // Notify ALL doctors
+        const { data: allDoctors } = await supabase
           .from("doctors")
           .select("email")
-          .in("role", shift.assigned_to_pool)
 
-        const { data: completoDoctors } = await supabase
-          .from("doctors")
-          .select("email")
-          .eq("role", "completo")
-
-        const uniqueEmails = Array.from(new Set([
-          ...(poolDoctors?.map(d => d.email) || []),
-          ...(completoDoctors?.map(d => d.email) || [])
-        ]))
+        const uniqueEmails = Array.from(new Set(allDoctors?.map(d => d.email) || []))
 
         if (uniqueEmails.length > 0) {
           await sendBulkFreeShiftAlert(
@@ -373,27 +357,17 @@ export async function updateShiftStatus(shiftId: string, status: ShiftStatus, do
 
   // Free Shift Alerts (for Rejected or manually Freed shifts)
   if (status === "rejected" || status === "free") {
-    if (targetPool.length > 0) {
-      // Notify the pool (Original code reused roughly)
-      const adminSupabase = await getSupabaseAdminClient()
+    // Notify ALL doctors
+    const adminSupabase = await getSupabaseAdminClient()
 
-      // Fetch pool + completo
-      const { data: poolDoctors } = await adminSupabase
-        .from("doctors")
-        .select("email, full_name, role")
-        .in("role", targetPool)
+    // Fetch all doctors
+    const { data: allDoctors } = await adminSupabase
+      .from("doctors")
+      .select("email")
 
-      const { data: completoDoctors } = await adminSupabase
-        .from("doctors")
-        .select("email, full_name, role")
-        .eq("role", "completo")
+    if (allDoctors && allDoctors.length > 0) {
+      const uniqueEmails = Array.from(new Set(allDoctors.map(d => d.email)))
 
-
-      const allDoctors = [...(poolDoctors || []), ...(completoDoctors || [])]
-      const uniqueDoctors = Array.from(new Map(allDoctors.map(d => [d.email, d])).values())
-      const uniqueEmails = Array.from(new Set(uniqueDoctors.map(d => d.email)))
-
-      // Notify eligible doctors
       await sendBulkFreeShiftAlert(
         uniqueEmails,
         shift.shift_category,
@@ -401,23 +375,6 @@ export async function updateShiftStatus(shiftId: string, status: ShiftStatus, do
         shift.shift_hours,
         format(parseISO(shift.shift_date), "dd/MM/yyyy")
       )
-
-      // Notify administrators about the free shift
-      const { data: adminDoctors } = await adminSupabase
-        .from("doctors")
-        .select("email")
-        .eq("role", "administrator")
-
-      if (adminDoctors && adminDoctors.length > 0) {
-        const adminEmails = adminDoctors.map(d => d.email)
-        await sendBulkFreeShiftAlert(
-          adminEmails,
-          shift.shift_category,
-          shift.shift_area,
-          shift.shift_hours,
-          format(parseISO(shift.shift_date), "dd/MM/yyyy")
-        )
-      }
     }
   }
 
@@ -444,12 +401,12 @@ export async function acceptFreeShift(shiftId: string, doctorId: string) {
   }
 
   const doctorProfile = doctorData as Doctor
-  const doctorRole = doctorProfile.role
+  // Role check removed as per new requirements
 
   // Get shift to check pool requirements
   const { data: shiftCheck, error: shiftError } = await supabase
     .from("shifts")
-    .select("assigned_to_pool, status")
+    .select("status")
     .eq("id", shiftId)
     .single()
 
@@ -461,15 +418,7 @@ export async function acceptFreeShift(shiftId: string, doctorId: string) {
     return { error: "Esta guardia ya ha sido tomada" }
   }
 
-  // Permission Logic
-  // Completo can take anything.
-  // Others must be in the pool.
-  const pool = shiftCheck.assigned_to_pool as string[] || []
-  const canAccept = doctorRole === 'completo' || pool.includes(doctorRole)
-
-  if (!canAccept) {
-    return { error: "No tienes permisos para aceptar esta guardia (Rol incompatible)" }
-  }
+  // Permission Logic REMOVED: Any doctor can take any free shift now.
 
   const { data, error } = await supabase
     .from("shifts")
@@ -661,8 +610,9 @@ export async function updateShift(shiftId: string, updates: any) {
     if (shift.assigned_to_pool && shift.assigned_to_pool.length > 0) {
       const { data: eligibleDoctorsData } = await supabase
         .from("doctors")
-        .select("*")
-        .in("role", shift.assigned_to_pool)
+        .select("email")
+      // No role filter - send to all
+
 
       if (eligibleDoctorsData && eligibleDoctorsData.length > 0) {
         const emails = eligibleDoctorsData.map(d => d.email)
@@ -748,4 +698,161 @@ export async function getDoctors(): Promise<Doctor[]> {
   }
 
   return doctors as Doctor[]
+}
+
+export async function clockIn(shiftId: string, doctorId: string) {
+  const supabase = await getSupabaseServerClient()
+
+  // 1. Verify shift ownership and status
+  const { data: shift, error: shiftError } = await supabase
+    .from("shifts")
+    .select("*")
+    .eq("id", shiftId)
+    .single()
+
+  if (shiftError || !shift) {
+    return { error: "Guardia no encontrada" }
+  }
+
+  if (shift.doctor_id !== doctorId) {
+    return { error: "No tienes permiso para gestionar esta guardia" }
+  }
+
+  if (shift.status !== "confirmed") {
+    return { error: "Solo puedes iniciar guardias confirmadas" }
+  }
+
+  if (shift.clock_in) {
+    return { error: "Ya has marcado entrada para esta guardia" }
+  }
+
+  // Optional: Check if it's the correct day
+  const today = new Date().toISOString().split('T')[0]
+  if (shift.shift_date !== today) {
+    // We allow clock-in for flexibility, but maybe warn? For now, allow it.
+    // return { error: "Solo puedes marcar entrada el día de la guardia" }
+  }
+
+  const { data, error } = await supabase
+    .from("shifts")
+    .update({
+      clock_in: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    })
+    .eq("id", shiftId)
+    .select()
+    .single()
+
+  if (error) {
+    console.error("Error clocking in:", error)
+    return { error: error.message }
+  }
+
+  // Audit event
+  await supabase.from("shift_events").insert({
+    shift_id: shiftId,
+    event_type: "clock_in",
+    doctor_id: doctorId,
+    notes: "Entrada registrada por el médico"
+  })
+
+  revalidatePath("/dashboard")
+  revalidatePath("/admin")
+  return { data }
+}
+
+export async function clockOut(shiftId: string, doctorId: string) {
+  const supabase = await getSupabaseServerClient()
+
+  // 1. Verify shift ownership and status
+  const { data: shift, error: shiftError } = await supabase
+    .from("shifts")
+    .select("*")
+    .eq("id", shiftId)
+    .single()
+
+  if (shiftError || !shift) {
+    return { error: "Guardia no encontrada" }
+  }
+
+  if (shift.doctor_id !== doctorId) {
+    return { error: "No tienes permiso para gestionar esta guardia" }
+  }
+
+  if (!shift.clock_in) {
+    return { error: "Debes marcar entrada antes de marcar salida" }
+  }
+
+  if (shift.clock_out) {
+    return { error: "Ya has marcado salida para esta guardia" }
+  }
+
+  const { data, error } = await supabase
+    .from("shifts")
+    .update({
+      clock_out: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    })
+    .eq("id", shiftId)
+    .select()
+    .single()
+
+  if (error) {
+    console.error("Error clocking out:", error)
+    return { error: error.message }
+  }
+
+  // Audit event
+  await supabase.from("shift_events").insert({
+    shift_id: shiftId,
+    event_type: "clock_out",
+    doctor_id: doctorId,
+    notes: "Salida registrada por el médico"
+  })
+
+  revalidatePath("/dashboard")
+  revalidatePath("/admin")
+  return { data }
+}
+
+export async function saveDoctorNotes(shiftId: string, doctorId: string, notes: string) {
+  const supabase = await getSupabaseServerClient()
+
+  // 1. Verify shift ownership
+  const { data: shift, error: shiftError } = await supabase
+    .from("shifts")
+    .select("*")
+    .eq("id", shiftId)
+    .single()
+
+  if (shiftError || !shift) {
+    return { error: "Guardia no encontrada" }
+  }
+
+  if (shift.doctor_id !== doctorId) {
+    return { error: "No tienes permiso para gestionar esta guardia" }
+  }
+
+  // Allow notes only for confirmed shifts (active or finished essentially)
+  if (shift.status !== "confirmed") {
+    return { error: "Solo puedes guardar notas en guardias confirmadas" }
+  }
+
+  const { data, error } = await supabase
+    .from("shifts")
+    .update({
+      doctor_notes: notes,
+      updated_at: new Date().toISOString()
+    })
+    .eq("id", shiftId)
+    .select()
+    .single()
+
+  if (error) {
+    console.error("Error saving notes:", error)
+    return { error: error.message }
+  }
+
+  revalidatePath("/dashboard")
+  return { data }
 }
