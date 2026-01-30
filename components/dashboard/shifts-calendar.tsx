@@ -10,16 +10,15 @@ import { CalendarHeader } from "./calendar/calendar-header"
 import { MonthView } from "./calendar/month-view"
 import { WeekView } from "./calendar/week-view"
 import { DayView } from "./calendar/day-view"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { FilterX, User, MapPin, Tag } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { ShiftsFilter } from "@/components/admin/shifts-filter"
 
 interface ShiftsCalendarProps {
   shifts: Shift[]
   doctors?: Doctor[] // Optional, only for admin view
+  currentDoctor?: Doctor
 }
 
-export function ShiftsCalendar({ shifts, ...props }: ShiftsCalendarProps) {
+export function ShiftsCalendar({ shifts, currentDoctor, ...props }: ShiftsCalendarProps) {
   const [currentDate, setCurrentDate] = useState(new Date())
   const [view, setView] = useState<"month" | "week" | "day">("month")
 
@@ -90,78 +89,16 @@ export function ShiftsCalendar({ shifts, ...props }: ShiftsCalendarProps) {
         <CardContent className="pt-6 flex-1 space-y-6">
           {/* Admin Filters Row */}
           {props.doctors && (
-            <div className="flex flex-wrap items-end gap-4 p-4 bg-slate-50 rounded-xl border border-slate-200">
-              <div className="space-y-2">
-                <label className="text-xs font-semibold text-slate-500 flex items-center gap-1.5 ml-1">
-                  <User className="w-3 h-3" />
-                  Médico
-                </label>
-                <Select value={filterDoctorId} onValueChange={setFilterDoctorId}>
-                  <SelectTrigger className="w-[200px] bg-white">
-                    <SelectValue placeholder="Todos los médicos" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todos los médicos</SelectItem>
-                    {props.doctors.map((doctor) => (
-                      <SelectItem key={doctor.id} value={doctor.id}>
-                        {doctor.full_name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-xs font-semibold text-slate-500 flex items-center gap-1.5 ml-1">
-                  <MapPin className="w-3 h-3" />
-                  Área
-                </label>
-                <Select value={filterArea} onValueChange={setFilterArea}>
-                  <SelectTrigger className="w-[160px] bg-white">
-                    <SelectValue placeholder="Todas las áreas" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todas las áreas</SelectItem>
-                    <SelectItem value="consultorio">Consultorio</SelectItem>
-                    <SelectItem value="internacion">Internación</SelectItem>
-                    <SelectItem value="refuerzo">Refuerzo</SelectItem>
-                    <SelectItem value="completo">Completo</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-xs font-semibold text-slate-500 flex items-center gap-1.5 ml-1">
-                  <Tag className="w-3 h-3" />
-                  Estado
-                </label>
-                <Select value={filterStatus} onValueChange={setFilterStatus}>
-                  <SelectTrigger className="w-[160px] bg-white">
-                    <SelectValue placeholder="Todos los estados" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todos los estados</SelectItem>
-                    <SelectItem value="new">Pendiente</SelectItem>
-                    <SelectItem value="confirmed">Confirmada</SelectItem>
-                    <SelectItem value="free">Libre</SelectItem>
-                    <SelectItem value="rejected">Rechazada</SelectItem>
-                    <SelectItem value="free_pending">Pendiente +12h</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {hasFilters && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={clearFilters}
-                  className="text-slate-500 hover:text-rose-600 hover:bg-rose-50 mb-0.5"
-                >
-                  <FilterX className="w-4 h-4 mr-2" />
-                  Limpiar
-                </Button>
-              )}
-            </div>
+            <ShiftsFilter
+              doctors={props.doctors}
+              filterDoctorId={filterDoctorId}
+              setFilterDoctorId={setFilterDoctorId}
+              filterArea={filterArea}
+              setFilterArea={setFilterArea}
+              filterStatus={filterStatus}
+              setFilterStatus={setFilterStatus}
+              onClear={clearFilters}
+            />
           )}
 
           {/* View Legend */}
@@ -225,9 +162,9 @@ export function ShiftsCalendar({ shifts, ...props }: ShiftsCalendarProps) {
           <div className="space-y-4 mt-4">
             {selectedShifts.map((shift) => (
               props.doctors ? (
-                <AdminShiftCard key={shift.id} shift={shift} doctors={props.doctors} />
+                <AdminShiftCard key={shift.id} shift={shift} doctors={props.doctors} currentDoctor={currentDoctor} />
               ) : (
-                <ShiftCard key={shift.id} shift={shift} doctorId={selectedDoctorId} />
+                <ShiftCard key={shift.id} shift={shift} doctorId={currentDoctor?.id || selectedDoctorId} />
               )
             ))}
           </div>

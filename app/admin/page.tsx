@@ -3,7 +3,7 @@ import { getCurrentDoctor } from "@/lib/actions/auth"
 import { getShifts } from "@/lib/actions/shifts"
 import { getDoctors } from "@/lib/actions/doctors"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Calendar, Users } from "lucide-react"
+import { Calendar, Users, Clock, CheckCircle2 } from "lucide-react"
 import { CreateShiftDialog } from "@/components/admin/create-shift-dialog"
 import type { Doctor } from "@/lib/supabase/types"
 
@@ -36,66 +36,79 @@ export default async function AdminPage() {
 
       <main className="container mx-auto px-4 py-8 space-y-8 pt-20 lg:pt-8">
         {/* Page Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200/60 shadow-sm">
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">Panel de Administración</h1>
-            <p className="text-sm text-slate-600">Gestión de guardias y médicos</p>
+            <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Panel de Administración</h1>
+            <p className="text-slate-500 font-medium">Gestión integral de guardias y personal médico</p>
           </div>
           {/* Desktop Create Button */}
           <div className="hidden lg:block">
             <CreateShiftDialog doctors={doctors} />
           </div>
         </div>
+
         {/* Stats Cards */}
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <Card>
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          <Card className="relative overflow-hidden border-none shadow-md group">
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-500 to-blue-600 opacity-[0.03] group-hover:opacity-[0.06] transition-opacity" />
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Guardias</CardTitle>
-              <Calendar className="h-4 w-4 text-slate-600" />
+              <CardTitle className="text-sm font-bold text-slate-500 uppercase tracking-wider">Total Guardias</CardTitle>
+              <div className="p-2 bg-blue-50 rounded-xl">
+                <Calendar className="h-5 w-5 text-blue-600" />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{shifts.length}</div>
-              <p className="text-xs text-slate-600">Todas las guardias</p>
+              <div className="text-3xl font-black text-slate-900">{shifts.length}</div>
+              <p className="text-xs font-semibold text-blue-600/70 mt-1">Registradas en el sistema</p>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="relative overflow-hidden border-none shadow-md group">
+            <div className="absolute inset-0 bg-gradient-to-br from-amber-500 to-amber-600 opacity-[0.03] group-hover:opacity-[0.06] transition-opacity" />
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Pendientes</CardTitle>
-              <Calendar className="h-4 w-4 text-amber-600" />
+              <CardTitle className="text-sm font-bold text-slate-500 uppercase tracking-wider">Pendientes</CardTitle>
+              <div className="p-2 bg-amber-50 rounded-xl">
+                <Clock className="h-5 w-5 text-amber-600" />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{pendingShifts}</div>
-              <p className="text-xs text-slate-600">Requieren atención</p>
+              <div className="text-3xl font-black text-slate-900">{pendingShifts}</div>
+              <p className="text-xs font-semibold text-amber-600/70 mt-1">Requieren confirmación</p>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="relative overflow-hidden border-none shadow-md group">
+            <div className="absolute inset-0 bg-gradient-to-br from-green-500 to-green-600 opacity-[0.03] group-hover:opacity-[0.06] transition-opacity" />
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Confirmadas</CardTitle>
-              <Calendar className="h-4 w-4 text-green-600" />
+              <CardTitle className="text-sm font-bold text-slate-500 uppercase tracking-wider">Confirmadas</CardTitle>
+              <div className="p-2 bg-green-50 rounded-xl">
+                <CheckCircle2 className="h-5 w-5 text-green-600" />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{confirmedShifts}</div>
-              <p className="text-xs text-slate-600">Guardias asignadas</p>
+              <div className="text-3xl font-black text-slate-900">{confirmedShifts}</div>
+              <p className="text-xs font-semibold text-green-600/70 mt-1">Listas para ejecución</p>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="relative overflow-hidden border-none shadow-md group">
+            <div className="absolute inset-0 bg-gradient-to-br from-indigo-500 to-indigo-600 opacity-[0.03] group-hover:opacity-[0.06] transition-opacity" />
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Médicos</CardTitle>
-              <Users className="h-4 w-4 text-blue-600" />
+              <CardTitle className="text-sm font-bold text-slate-500 uppercase tracking-wider">Médicos</CardTitle>
+              <div className="p-2 bg-indigo-50 rounded-xl">
+                <Users className="h-5 w-5 text-indigo-600" />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{doctors.length}</div>
-              <p className="text-xs text-slate-600">Registrados</p>
+              <div className="text-3xl font-black text-slate-900">{doctors.length}</div>
+              <p className="text-xs font-semibold text-indigo-600/70 mt-1">Personal capacitado</p>
             </CardContent>
           </Card>
         </div>
 
         {/* Shifts List Section */}
         <div className="space-y-4">
-          <AdminShiftsList shifts={shifts} doctors={doctors} />
+          <AdminShiftsList shifts={shifts} doctors={doctors} currentDoctor={currentDoctor} />
         </div>
       </main >
     </div >

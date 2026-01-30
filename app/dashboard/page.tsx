@@ -3,6 +3,7 @@ import { getCurrentDoctor } from "@/lib/actions/auth"
 import { getShiftsByDoctor, getShifts } from "@/lib/actions/shifts"
 import { StatsCards } from "@/components/dashboard/stats-cards"
 import { ShiftsList } from "@/components/dashboard/shifts-list"
+import { TodayShifts } from "@/components/dashboard/today-shifts"
 import { ShiftsCalendar } from "@/components/dashboard/shifts-calendar"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Calendar, List } from "lucide-react"
@@ -54,6 +55,8 @@ export default async function DashboardPage() {
           </h1>
           <p className="text-slate-600">Gestiona tus guardias y horarios</p>
         </div>
+
+        <TodayShifts shifts={visibleShifts} currentDoctor={doctor} />
 
         <StatsCards shifts={visibleShifts} />
 

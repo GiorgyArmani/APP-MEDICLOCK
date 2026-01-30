@@ -167,6 +167,15 @@ export function ShiftCard({ shift, doctorId }: ShiftCardProps) {
                   12+ horas
                 </Badge>
               )}
+              {(() => {
+                const today = new Date()
+                const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`
+                return shift.shift_date === todayStr && (
+                  <Badge className="bg-emerald-600 text-white border-emerald-700 shadow-sm animate-pulse">
+                    HOY
+                  </Badge>
+                )
+              })()}
             </div>
           </div>
         </div>

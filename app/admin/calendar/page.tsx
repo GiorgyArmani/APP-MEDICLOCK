@@ -4,6 +4,7 @@ import { getShifts } from "@/lib/actions/shifts"
 import { getDoctors } from "@/lib/actions/doctors"
 import { AdminCalendar } from "@/components/admin/admin-calendar"
 import { Calendar } from "lucide-react"
+import { CreateShiftDialog } from "@/components/admin/create-shift-dialog"
 
 export default async function AdminCalendarPage() {
     const currentDoctor = await getCurrentDoctor()
@@ -21,18 +22,24 @@ export default async function AdminCalendarPage() {
     return (
         <div className="min-h-screen bg-slate-50 pt-20 lg:pt-8 px-4 pb-8">
             <div className="container mx-auto space-y-6">
-                <div className="flex items-center gap-3">
-                    <div className="p-2 bg-blue-600 rounded-lg">
-                        <Calendar className="h-6 w-6 text-white" />
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 bg-blue-600 rounded-lg">
+                            <Calendar className="h-6 w-6 text-white" />
+                        </div>
+                        <div>
+                            <h1 className="text-2xl font-bold text-slate-900">Calendario de Guardias</h1>
+                            <p className="text-sm text-slate-600">Visualización mensual, semanal y diaria de todas las guardias</p>
+                        </div>
                     </div>
-                    <div>
-                        <h1 className="text-2xl font-bold text-slate-900">Calendario de Guardias</h1>
-                        <p className="text-sm text-slate-600">Visualización mensual, semanal y diaria de todas las guardias</p>
+                    {/* Desktop Create Button */}
+                    <div className="hidden lg:block">
+                        <CreateShiftDialog doctors={doctors} />
                     </div>
                 </div>
 
-                <AdminCalendar shifts={shifts} doctors={doctors} />
+                <AdminCalendar shifts={shifts} doctors={doctors} currentDoctor={currentDoctor} />
             </div>
-        </div>
+        </div >
     )
 }

@@ -31,6 +31,7 @@ export function AppSidebar({ doctor }: AppSidebarProps) {
         ? [
             { href: "/admin", label: "Panel", icon: LayoutDashboard },
             { href: "/admin/calendar", label: "Calendario", icon: Calendar },
+            { href: "/admin/my-shifts", label: "Mis Guardias", icon: Clock },
             { href: "/admin/doctors", label: "Médicos", icon: Users },
         ]
         : [
