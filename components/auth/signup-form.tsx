@@ -2,17 +2,14 @@
 
 import { useState } from "react"
 import { signUp } from "@/lib/actions/auth"
-import type { DoctorRole } from "@/lib/supabase/types"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import Link from "next/link"
 
 export function SignupForm() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [role, setRole] = useState<DoctorRole | "">("")
 
   async function onSubmit(formData: FormData) {
     setIsLoading(true)
@@ -23,18 +20,12 @@ export function SignupForm() {
     const fullName = formData.get("fullName") as string
     const phoneNumber = formData.get("phoneNumber") as string
 
-    if (!role) {
-      setError("Please select a doctor role")
-      setIsLoading(false)
-      return
-    }
-
     const result = await signUp({
       email,
       password,
       fullName,
       phoneNumber,
-      role,
+      role: "doctor",
     })
 
     if (result?.error) {
@@ -94,20 +85,6 @@ export function SignupForm() {
           minLength={6}
         />
         <p className="text-xs text-muted-foreground">Debe tener al menos 6 caracteres</p>
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="role">Rol de médico</Label>
-        <Select value={role} onValueChange={(value) => setRole(value as DoctorRole)} disabled={isLoading}>
-          <SelectTrigger>
-            <SelectValue placeholder="Selecciona tu rol" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="internacion">Internación (Internist)</SelectItem>
-            <SelectItem value="consultorio">Consultorio (Office Physician)</SelectItem>
-            <SelectItem value="completo">Completo (Full-Service Physician)</SelectItem>
-          </SelectContent>
-        </Select>
       </div>
 
       {error && (

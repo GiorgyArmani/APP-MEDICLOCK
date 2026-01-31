@@ -9,6 +9,7 @@ import {
   sendStatusChangeEmail,
   sendBulkFreeShiftAlert,
 } from "@/lib/notifications/email"
+import { notifyFreeShift } from "@/lib/notifications/in-app"
 import { format, parseISO } from "date-fns"
 
 export async function getShifts(): Promise<Shift[]> {
@@ -143,25 +144,16 @@ export async function createShift(shiftData: CreateShiftParams) {
       }
     }
 
-    // For recurring FREE shifts, only notify once for the first shift
+    // For recurring FREE shifts, notify eligible doctors via in-app notifications
     const firstShift = insertedShifts[0]
     if (firstShift.shift_type === "free") {
-      // Notify ALL doctors about the free shift
-      const { data: allDoctors } = await supabase
-        .from("doctors")
-        .select("email")
-
-      const uniqueEmails = Array.from(new Set(allDoctors?.map(d => d.email) || []))
-
-      if (uniqueEmails.length > 0) {
-        await sendBulkFreeShiftAlert(
-          uniqueEmails,
-          firstShift.shift_category,
-          firstShift.shift_area,
-          firstShift.shift_hours,
-          format(parseISO(firstShift.shift_date), "dd/MM/yyyy")
-        )
-      }
+      await notifyFreeShift(
+        firstShift.id,
+        firstShift.shift_category,
+        firstShift.shift_area,
+        firstShift.shift_hours,
+        firstShift.shift_date
+      )
     }
   } else {
     // SINGLE SHIFT: Send individual emails as before
@@ -188,23 +180,15 @@ export async function createShift(shiftData: CreateShiftParams) {
       }
 
       // Free shift alerts
+      // Notify eligible doctors via in-app notifications
       if (shift.shift_type === "free") {
-        // Notify ALL doctors
-        const { data: allDoctors } = await supabase
-          .from("doctors")
-          .select("email")
-
-        const uniqueEmails = Array.from(new Set(allDoctors?.map(d => d.email) || []))
-
-        if (uniqueEmails.length > 0) {
-          await sendBulkFreeShiftAlert(
-            uniqueEmails,
-            shift.shift_category,
-            shift.shift_area,
-            shift.shift_hours,
-            format(parseISO(shift.shift_date), "dd/MM/yyyy")
-          )
-        }
+        await notifyFreeShift(
+          shift.id,
+          shift.shift_category,
+          shift.shift_area,
+          shift.shift_hours,
+          shift.shift_date
+        )
       }
     }
   }
@@ -274,8 +258,6 @@ export async function updateShiftStatus(shiftId: string, status: ShiftStatus, do
   }
 
   // 2. Prepare updates based on target status
-  let targetPool: DoctorRole[] = currentShift.assigned_to_pool || []
-
   if (status === "confirmed") {
     updates.status = "confirmed"
     // Keep existing doctor_id
@@ -285,15 +267,18 @@ export async function updateShiftStatus(shiftId: string, status: ShiftStatus, do
     updates.shift_type = "free"
     updates.doctor_id = null
 
-    // Calculate pool if missing or if it needs to be set for a newly freed shift
-    // We intentionally recalculate/ensure it's set if currently empty
-    if (targetPool.length === 0) {
-      if (currentShift.shift_area === 'consultorio') targetPool = ['consultorio']
-      else if (currentShift.shift_area === 'internacion') targetPool = ['internacion']
-      else if (currentShift.shift_area === 'refuerzo') targetPool = ['consultorio', 'internacion']
-      else targetPool = ['completo']
+    // Increment rejected_count if it was a rejection by a doctor
+    if (status === "rejected" && currentShift.doctor_id) {
+      const { error: incError } = await (adminSupabase as any).rpc('increment_doctor_rejections', { doctor_uuid: currentShift.doctor_id })
+      if (incError) {
+        console.error("Error incrementing rejection count:", incError)
+        // We'll also try a manual update in case the RPC doesn't exist yet
+        const { data: docData } = await adminSupabase.from('doctors').select('rejected_count').eq('id', currentShift.doctor_id).single()
+        if (docData) {
+          await adminSupabase.from('doctors').update({ rejected_count: (docData.rejected_count || 0) + 1 }).eq('id', currentShift.doctor_id)
+        }
+      }
     }
-    updates.assigned_to_pool = targetPool
   } else if (status === "free_pending") {
     updates.status = "free_pending"
     updates.free_pending_at = new Date().toISOString()
@@ -357,25 +342,15 @@ export async function updateShiftStatus(shiftId: string, status: ShiftStatus, do
 
   // Free Shift Alerts (for Rejected or manually Freed shifts)
   if (status === "rejected" || status === "free") {
-    // Notify ALL doctors
-    const adminSupabase = await getSupabaseAdminClient()
-
-    // Fetch all doctors
-    const { data: allDoctors } = await adminSupabase
-      .from("doctors")
-      .select("email")
-
-    if (allDoctors && allDoctors.length > 0) {
-      const uniqueEmails = Array.from(new Set(allDoctors.map(d => d.email)))
-
-      await sendBulkFreeShiftAlert(
-        uniqueEmails,
-        shift.shift_category,
-        shift.shift_area,
-        shift.shift_hours,
-        format(parseISO(shift.shift_date), "dd/MM/yyyy")
-      )
-    }
+    // Notify eligible doctors via in-app notifications (exclude the doctor who rejected)
+    await notifyFreeShift(
+      shift.id,
+      shift.shift_category,
+      shift.shift_area,
+      shift.shift_hours,
+      shift.shift_date,
+      currentShift.doctor_id || undefined
+    )
   }
 
   revalidatePath("/admin")
@@ -541,7 +516,6 @@ export async function updateShift(shiftId: string, updates: any) {
         shift_date: format(currentDate, "yyyy-MM-dd"),
         status: shift.status === 'confirmed' ? 'confirmed' : 'new', // If original is confirmed, confirm futures? Or keep new? safest is keep same status but maybe 'new' if manual confirm needed. Let's copy strictly for "Perpetual" meaning "Same as this".
         notes: shift.notes,
-        assigned_to_pool: shift.assigned_to_pool,
         recurrence_id: newRecurrenceId,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
@@ -600,30 +574,24 @@ export async function updateShift(shiftId: string, updates: any) {
     }
   }
 
-  // Case 2: Converted to free shift with pool assignment
+  // Case 2: Converted to free shift
   if (
-    (shiftUpdates.shift_type === "free" && shiftUpdates.shift_type !== oldShift.shift_type) ||
-    (shift.shift_type === "free" &&
-      shiftUpdates.assigned_to_pool &&
-      JSON.stringify(shiftUpdates.assigned_to_pool) !== JSON.stringify(oldShift.assigned_to_pool))
+    (shiftUpdates.shift_type === "free" && shiftUpdates.shift_type !== oldShift.shift_type)
   ) {
-    if (shift.assigned_to_pool && shift.assigned_to_pool.length > 0) {
-      const { data: eligibleDoctorsData } = await supabase
-        .from("doctors")
-        .select("email")
-      // No role filter - send to all
+    const { data: eligibleDoctorsData } = await supabase
+      .from("doctors")
+      .select("email")
+    // No role filter - send to all
 
-
-      if (eligibleDoctorsData && eligibleDoctorsData.length > 0) {
-        const emails = eligibleDoctorsData.map(d => d.email)
-        await sendBulkFreeShiftAlert(
-          emails,
-          shift.shift_category,
-          shift.shift_area,
-          shift.shift_hours,
-          format(parseISO(shift.shift_date), "dd/MM/yyyy")
-        )
-      }
+    if (eligibleDoctorsData && eligibleDoctorsData.length > 0) {
+      const emails = eligibleDoctorsData.map(d => d.email)
+      await sendBulkFreeShiftAlert(
+        emails,
+        shift.shift_category,
+        shift.shift_area,
+        shift.shift_hours,
+        format(parseISO(shift.shift_date), "dd/MM/yyyy")
+      )
     }
   }
 

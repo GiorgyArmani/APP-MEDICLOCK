@@ -3,6 +3,7 @@
 import { getSupabaseAdminClient } from "@/lib/supabase/server"
 import { revalidatePath } from "next/cache"
 import { sendBulkFreeShiftAlert } from "@/lib/notifications/email"
+import { notifyFreeShift } from "@/lib/notifications/in-app"
 import { getDoctors } from "./doctors"
 import type { Shift } from "@/lib/supabase/types"
 
@@ -47,31 +48,15 @@ export async function cancelShift(shiftId: string) {
         notes: "Guardia liberada por el médico",
     })
 
-    // Notify relevant doctors about the free shift (Pool + Completo)
-    const { data: poolDoctors } = await supabase
-        .from("doctors")
-        .select("email")
-        .in("role", shift.assigned_to_pool || [])
-
-    const { data: completoDoctors } = await supabase
-        .from("doctors")
-        .select("email")
-        .eq("role", "completo")
-
-    const emails = Array.from(new Set([
-        ...(poolDoctors?.map(d => d.email) || []),
-        ...(completoDoctors?.map(d => d.email) || [])
-    ]))
-
-    if (emails.length > 0) {
-        await sendBulkFreeShiftAlert(
-            emails,
-            shift.shift_category,
-            shift.shift_area,
-            shift.shift_hours,
-            shift.shift_date
-        )
-    }
+    // Notify eligible doctors via in-app notifications
+    await notifyFreeShift(
+        shift.id,
+        shift.shift_category,
+        shift.shift_area,
+        shift.shift_hours,
+        shift.shift_date,
+        shift.doctor_id || undefined
+    )
 
     revalidatePath("/dashboard")
     revalidatePath("/dashboard/shifts")

@@ -19,25 +19,20 @@ export function DoctorsList({ doctors, shifts }: DoctorsListProps) {
 
   const getRoleBadgeColor = (role: string) => {
     switch (role) {
-      case "internacion":
-        return "bg-blue-100 text-blue-700 hover:bg-blue-100"
-      case "consultorio":
-        return "bg-green-100 text-green-700 hover:bg-green-100"
-      case "completo":
+      case "administrator":
         return "bg-purple-100 text-purple-700 hover:bg-purple-100"
+      case "doctor":
       default:
-        return "bg-slate-100 text-slate-700 hover:bg-slate-100"
+        return "bg-blue-100 text-blue-700 hover:bg-blue-100"
     }
   }
 
   const getRoleLabel = (role: string) => {
     switch (role) {
-      case "internacion":
-        return "Internación"
-      case "consultorio":
-        return "Consultorio"
-      case "completo":
-        return "Completo"
+      case "administrator":
+        return "Administrador"
+      case "doctor":
+        return "Médico"
       default:
         return role
     }
@@ -113,8 +108,8 @@ export function DoctorsList({ doctors, shifts }: DoctorsListProps) {
                             <span className="font-semibold text-green-600">{stats.confirmed}</span>
                           </div>
                           <div>
-                            <span className="text-slate-600">Pendientes: </span>
-                            <span className="font-semibold text-amber-600">{stats.pending}</span>
+                            <span className="text-slate-600">Rechazadas: </span>
+                            <span className="font-semibold text-red-600">{doctor.rejected_count || 0}</span>
                           </div>
                         </div>
                       </div>

@@ -13,6 +13,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Calendar, Clock, CheckCircle2, XCircle, Users, AlertCircle, MapPin } from "lucide-react"
 import { toast } from "sonner"
+import { cn } from "@/lib/utils"
 
 interface ShiftCardProps {
   shift: Shift
@@ -140,7 +141,13 @@ export function ShiftCard({ shift, doctorId }: ShiftCardProps) {
   const isAssignedToMe = shift.doctor_id === doctorId
 
   return (
-    <Card className="hover:shadow-md transition-shadow">
+    <Card
+      id={`shift-${shift.id}`}
+      className={cn(
+        "transition-all duration-200",
+        "hover:shadow-md transition-shadow"
+      )}
+    >
       <CardContent className="p-6">
         <div className="flex items-start justify-between mb-4">
           <div className="flex-1">
@@ -207,22 +214,6 @@ export function ShiftCard({ shift, doctorId }: ShiftCardProps) {
           <div className="mb-4 p-3 bg-slate-50 rounded-md">
             <p className="text-sm text-slate-700">
               <span className="font-medium">Notas:</span> {shift.notes}
-            </p>
-          </div>
-        )}
-
-        {shift.shift_type === "free" && shift.assigned_to_pool && (
-          <div className="mb-4 p-3 bg-cyan-50 rounded-md border border-cyan-200">
-            <p className="text-sm text-cyan-900">
-              <span className="font-medium">Disponible para:</span>{" "}
-              {shift.assigned_to_pool
-                .map((role) => {
-                  if (role === "internacion") return "Internación"
-                  if (role === "consultorio") return "Consultorio"
-                  if (role === "completo") return "Completo"
-                  return role
-                })
-                .join(", ")}
             </p>
           </div>
         )}

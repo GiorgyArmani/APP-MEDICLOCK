@@ -6,7 +6,7 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[]
 
-export type DoctorRole = "internacion" | "consultorio" | "completo" | "administrator"
+export type DoctorRole = "doctor" | "administrator"
 export type ShiftStatus = "new" | "free" | "confirmed" | "rejected" | "free_pending"
 export type ShiftType = "assigned" | "free"
 
@@ -20,6 +20,7 @@ export interface Database {
           full_name: string
           phone_number: string | null
           role: DoctorRole
+          rejected_count: number
           created_at: string
           updated_at: string
         }
@@ -29,6 +30,7 @@ export interface Database {
           full_name: string
           phone_number?: string | null
           role: DoctorRole
+          rejected_count?: number
           created_at?: string
           updated_at?: string
         }
@@ -38,6 +40,7 @@ export interface Database {
           full_name?: string
           phone_number?: string | null
           role?: DoctorRole
+          rejected_count?: number
           created_at?: string
           updated_at?: string
         }
@@ -54,7 +57,6 @@ export interface Database {
           shift_date: string
           status: ShiftStatus
           notes: string | null
-          assigned_to_pool: DoctorRole[] | null
           free_pending_at: string | null
           created_at: string
           updated_at: string
@@ -199,7 +201,8 @@ export interface Database {
           id: string
           type: string
           message: string
-          shift_id: string
+          shift_id: string | null
+          doctor_id: string | null
           recipient_role: DoctorRole | null
           read: boolean
           created_at: string
@@ -208,7 +211,8 @@ export interface Database {
           id?: string
           type: string
           message: string
-          shift_id: string
+          shift_id?: string | null
+          doctor_id?: string | null
           recipient_role?: DoctorRole | null
           read?: boolean
           created_at?: string
@@ -217,7 +221,8 @@ export interface Database {
           id?: string
           type?: string
           message?: string
-          shift_id?: string
+          shift_id?: string | null
+          doctor_id?: string | null
           recipient_role?: DoctorRole | null
           read?: boolean
           created_at?: string

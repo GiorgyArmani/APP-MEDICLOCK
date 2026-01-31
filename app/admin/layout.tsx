@@ -1,6 +1,9 @@
 import { getCurrentDoctor } from "@/lib/actions/auth"
 import { redirect } from "next/navigation"
 import { AppSidebar } from "@/components/layout/app-sidebar"
+import { AppHeader } from "@/components/layout/app-header"
+import { SidebarProvider } from "@/contexts/sidebar-context"
+import { SidebarLayoutContent } from "@/components/layout/sidebar-layout-content"
 
 export default async function AdminLayout({
     children,
@@ -18,11 +21,13 @@ export default async function AdminLayout({
     }
 
     return (
-        <div className="flex min-h-screen">
-            <AppSidebar doctor={doctor} />
-            <main className="flex-1 lg:ml-64 bg-slate-50">
-                {children}
-            </main>
-        </div>
+        <SidebarProvider>
+            <div className="flex min-h-screen">
+                <AppSidebar doctor={doctor} />
+                <SidebarLayoutContent doctor={doctor}>
+                    {children}
+                </SidebarLayoutContent>
+            </div>
+        </SidebarProvider>
     )
 }

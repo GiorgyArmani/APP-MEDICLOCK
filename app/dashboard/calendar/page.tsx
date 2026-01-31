@@ -14,15 +14,22 @@ export default async function DoctorCalendarPage() {
     // Filter shifts for role-based visibility (same logic as in dashboard)
     const allShifts = await getShifts()
 
+    // Filter shifts for role-based visibility
+    // 1. Admin sees everything
+    // 2. Doctors see:
+    //    a. Their own assigned shifts
+    //    b. Free shifts (all doctors can see and accept free shifts)
     const visibleShifts = doctor.role === "administrator"
         ? allShifts
         : allShifts.filter((s) => {
+            // Own shifts
             if (s.doctor_id === doctor.id) return true
-            if (s.shift_type === "free") {
-                if (doctor.role === 'completo') return true
-                const pool = s.assigned_to_pool || []
-                return pool.includes(doctor.role)
+
+            // Free shifts - all doctors can see them
+            if (s.shift_type === "free" || s.status === "free" || s.status === "free_pending") {
+                return true
             }
+
             return false
         })
 
