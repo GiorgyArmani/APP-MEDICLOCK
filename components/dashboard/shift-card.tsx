@@ -43,7 +43,7 @@ export function ShiftCard({ shift, doctorId }: ShiftCardProps) {
       if (result.error) {
         toast.error(`Error: ${result.error}`)
       } else {
-        toast.success("Guardia liberada al pool")
+        toast.success("Guardia liberada")
         router.refresh()
       }
     })

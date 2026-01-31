@@ -37,7 +37,7 @@ export function CreateShiftDialog({ doctors, variant = "default" }: CreateShiftD
                 <DialogHeader>
                     <DialogTitle>Crear Nueva Guardia</DialogTitle>
                     <DialogDescription>
-                        Asigna una guardia a un médico específico o déjala libre para el pool
+                        Asigna una guardia a un médico específico o déjala libre
                     </DialogDescription>
                 </DialogHeader>
                 <CreateShiftForm doctors={doctors} onSuccess={() => setOpen(false)} />

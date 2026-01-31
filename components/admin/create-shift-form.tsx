@@ -5,13 +5,12 @@ import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { createShift } from "@/lib/actions/shifts"
 import { SHIFT_TYPES } from "@/lib/constants/shift-types"
-import type { Doctor, DoctorRole } from "@/lib/supabase/types"
+import type { Doctor } from "@/lib/supabase/types"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
-import { Card, CardContent } from "@/components/ui/card"
 import { toast } from "sonner"
 
 interface CreateShiftFormProps {
@@ -24,7 +23,6 @@ export function CreateShiftForm({ doctors, onSuccess }: CreateShiftFormProps) {
   const router = useRouter()
   const [shiftType, setShiftType] = useState<"assigned" | "free">("assigned")
   const [selectedDoctor, setSelectedDoctor] = useState<string>("")
-  const [selectedPools, setSelectedPools] = useState<DoctorRole[]>([])
   const [selectedShiftCategory, setSelectedShiftCategory] = useState<string>("")
 
   // Recurrence state
@@ -45,11 +43,6 @@ export function CreateShiftForm({ doctors, onSuccess }: CreateShiftFormProps) {
       return
     }
 
-    if (shiftType === "free" && selectedPools.length === 0) {
-      toast.error("Selecciona al menos un pool de médicos")
-      return
-    }
-
     startTransition(async () => {
       const result = await createShift({
         doctor_id: shiftType === "assigned" ? selectedDoctor : null,
@@ -60,7 +53,6 @@ export function CreateShiftForm({ doctors, onSuccess }: CreateShiftFormProps) {
         shift_date: formData.shiftDate,
         status: shiftType === "assigned" ? "new" : "free",
         notes: formData.notes,
-        assigned_to_pool: shiftType === "free" ? selectedPools : undefined,
         isRecurring,
         recurrenceEndDate: isRecurring ? recurrenceEndDate : undefined,
       })
@@ -72,7 +64,6 @@ export function CreateShiftForm({ doctors, onSuccess }: CreateShiftFormProps) {
         // Reset form
         setFormData({ shiftDate: "", notes: "" })
         setSelectedDoctor("")
-        setSelectedPools([])
         setSelectedShiftCategory("")
         setIsRecurring(false)
         setRecurrenceEndDate("")
@@ -80,11 +71,6 @@ export function CreateShiftForm({ doctors, onSuccess }: CreateShiftFormProps) {
         onSuccess?.()
       }
     })
-  }
-
-  const togglePool = (role: DoctorRole) => {
-    if (role === "administrator") return
-    setSelectedPools((prev) => (prev.includes(role) ? prev.filter((r) => r !== role) : [...prev, role]))
   }
 
   return (
@@ -98,7 +84,7 @@ export function CreateShiftForm({ doctors, onSuccess }: CreateShiftFormProps) {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="assigned">Asignada (a médico específico)</SelectItem>
-            <SelectItem value="free">Libre (pool de médicos)</SelectItem>
+            <SelectItem value="free">Libre</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -120,8 +106,8 @@ export function CreateShiftForm({ doctors, onSuccess }: CreateShiftFormProps) {
         </Select>
       </div>
 
-      {/* Asignación de Médico o Pool */}
-      {shiftType === "assigned" ? (
+      {/* Asignación de Médico */}
+      {shiftType === "assigned" && (
         <div className="space-y-2">
           <Label htmlFor="doctor">Médico Asignado *</Label>
           <Select value={selectedDoctor} onValueChange={setSelectedDoctor} required>
@@ -136,43 +122,6 @@ export function CreateShiftForm({ doctors, onSuccess }: CreateShiftFormProps) {
               ))}
             </SelectContent>
           </Select>
-        </div>
-      ) : (
-        <div className="space-y-2">
-          <Label>Pool de Médicos *</Label>
-          <Card>
-            <CardContent className="pt-6">
-              <div className="space-y-3">
-                <label className="flex items-center gap-3 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={selectedPools.includes("internacion")}
-                    onChange={() => togglePool("internacion")}
-                    className="w-4 h-4 rounded border-slate-300"
-                  />
-                  <span className="text-sm">Internación</span>
-                </label>
-                <label className="flex items-center gap-3 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={selectedPools.includes("consultorio")}
-                    onChange={() => togglePool("consultorio")}
-                    className="w-4 h-4 rounded border-slate-300"
-                  />
-                  <span className="text-sm">Consultorio</span>
-                </label>
-                <label className="flex items-center gap-3 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={selectedPools.includes("completo")}
-                    onChange={() => togglePool("completo")}
-                    className="w-4 h-4 rounded border-slate-300"
-                  />
-                  <span className="text-sm">Completo</span>
-                </label>
-              </div>
-            </CardContent>
-          </Card>
         </div>
       )}
 
