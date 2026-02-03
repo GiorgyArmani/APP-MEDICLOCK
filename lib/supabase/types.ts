@@ -252,6 +252,48 @@ export interface Database {
         }
         Relationships: []
       }
+      chat_messages: {
+        Row: {
+          id: string
+          doctor_id: string
+          sender_id: string
+          content: string
+          is_read: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          doctor_id: string
+          sender_id: string
+          content: string
+          is_read?: boolean
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          doctor_id?: string
+          sender_id?: string
+          content?: string
+          is_read?: boolean
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_messages_doctor_id_fkey"
+            columns: ["doctor_id"]
+            isOneToOne: false
+            referencedRelation: "doctors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_messages_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "doctors"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
     }
     Views: {}
     Functions: {}
@@ -278,3 +320,6 @@ export type ShiftEventInsert = Database["public"]["Tables"]["shift_events"]["Ins
 
 export type Notification = Database["public"]["Tables"]["notifications"]["Row"]
 export type NotificationInsert = Database["public"]["Tables"]["notifications"]["Insert"]
+
+export type ChatMessage = Database["public"]["Tables"]["chat_messages"]["Row"]
+export type ChatMessageInsert = Database["public"]["Tables"]["chat_messages"]["Insert"]

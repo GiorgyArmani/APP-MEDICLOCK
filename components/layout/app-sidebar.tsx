@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation"
 import { signOut } from "@/lib/actions/auth"
 import type { Doctor } from "@/lib/supabase/types"
 import { Button } from "@/components/ui/button"
-import { Calendar, LayoutDashboard, Clock, Users, LogOut, Menu, FileText } from "lucide-react"
+import { Calendar, LayoutDashboard, Clock, Users, LogOut, Menu, FileText, MessageSquare } from "lucide-react"
 import { useState } from "react"
 import { cn } from "@/lib/utils"
 import { ChevronLeft, ChevronRight } from "lucide-react"
@@ -27,6 +27,7 @@ export function AppSidebar({ doctor }: AppSidebarProps) {
             { href: "/admin/calendar", label: "Calendario", icon: Calendar },
             { href: "/admin/my-shifts", label: "Mis Guardias", icon: Clock },
             { href: "/admin/doctors", label: "Médicos", icon: Users },
+            { href: "/admin/messages", label: "Mensajes", icon: MessageSquare },
         ]
         : isHonorarios
             ? [
@@ -39,6 +40,7 @@ export function AppSidebar({ doctor }: AppSidebarProps) {
                 { href: "/dashboard/calendar", label: "Calendario", icon: Calendar },
                 { href: "/dashboard/shifts", label: "Guardias", icon: Users },
                 { href: "/dashboard/availability", label: "Disponibilidad", icon: Clock },
+                { href: "/dashboard/messages", label: "Mensajes", icon: MessageSquare },
             ]
 
     const handleLogout = async () => {
