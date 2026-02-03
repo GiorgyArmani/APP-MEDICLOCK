@@ -3,6 +3,7 @@ import { getCurrentDoctor } from "@/lib/actions/auth"
 import { getDoctorsWithUnreadCount } from "@/lib/actions/chat"
 import { AdminChatDashboard } from "@/components/admin/admin-chat-dashboard"
 import { MessageSquare } from "lucide-react"
+import { Suspense } from "react"
 
 export default async function AdminMessagesPage() {
     const currentDoctor = await getCurrentDoctor()
@@ -28,7 +29,9 @@ export default async function AdminMessagesPage() {
                 Comunícate directamente con los médicos. Los mensajes son en tiempo real y quedan registrados para futuras revisiones.
             </p>
 
-            <AdminChatDashboard initialDoctors={doctors} adminId={currentDoctor.id} />
+            <Suspense fallback={<div className="h-96 flex items-center justify-center">Cargando chat...</div>}>
+                <AdminChatDashboard initialDoctors={doctors} adminId={currentDoctor.id} />
+            </Suspense>
         </div>
     )
 }

@@ -1,10 +1,12 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
+import { useSearchParams } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import type { Doctor, ChatMessage } from "@/lib/supabase/types"
 import { Badge } from "@/components/ui/badge"
 import { Search, User as UserIcon, MessageSquare } from "lucide-react"
+import { ScrollArea } from "@/components/ui/scroll-area"
 import { Input } from "@/components/ui/input"
 import { ChatWindow } from "@/components/chat/chat-window"
 import { cn } from "@/lib/utils"
@@ -18,7 +20,16 @@ export function AdminChatDashboard({ initialDoctors, adminId }: AdminChatDashboa
     const [doctors, setDoctors] = useState(initialDoctors)
     const [search, setSearch] = useState("")
     const [selectedDoctorId, setSelectedDoctorId] = useState<string | null>(null)
+    const searchParams = useSearchParams()
     const supabase = createClient()
+
+    // Handle initial doctor selection from URL
+    useEffect(() => {
+        const doctorId = searchParams.get("doctor")
+        if (doctorId) {
+            setSelectedDoctorId(doctorId)
+        }
+    }, [searchParams])
 
     const filteredDoctors = doctors.filter(d =>
         d.full_name.toLowerCase().includes(search.toLowerCase()) ||
@@ -63,10 +74,13 @@ export function AdminChatDashboard({ initialDoctors, adminId }: AdminChatDashboa
     }
 
     return (
-        <div className="flex flex-col md:flex-row gap-0 h-[calc(100vh-16rem)] min-h-[500px] border rounded-xl bg-white shadow-sm overflow-hidden mt-4">
+        <div className="flex flex-col md:flex-row gap-0 h-[calc(100dvh-12rem)] md:h-[calc(100dvh-16rem)] min-h-0 border rounded-xl bg-white shadow-sm overflow-hidden mt-4">
             {/* Sidebar: Doctor List */}
-            <div className="w-full md:w-80 flex flex-col bg-slate-50 border-r border-slate-200 shrink-0">
-                <div className="p-4 border-b bg-white">
+            <div className={cn(
+                "w-full md:w-80 flex flex-col bg-slate-50 border-r border-slate-200 shrink-0 min-h-0",
+                selectedDoctorId ? "hidden md:flex" : "flex"
+            )}>
+                <div className="p-4 border-b bg-white shrink-0">
                     <div className="relative">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                         <Input
@@ -78,7 +92,7 @@ export function AdminChatDashboard({ initialDoctors, adminId }: AdminChatDashboa
                     </div>
                 </div>
 
-                <div className="flex-1 overflow-y-auto">
+                <ScrollArea className="flex-1 min-h-0">
                     <div className="p-2 space-y-1">
                         {filteredDoctors.map((doctor) => (
                             <div
@@ -125,17 +139,21 @@ export function AdminChatDashboard({ initialDoctors, adminId }: AdminChatDashboa
                             </div>
                         )}
                     </div>
-                </div>
+                </ScrollArea>
             </div>
 
             {/* Chat Area */}
-            <div className="flex-1 h-full bg-white overflow-hidden">
+            <div className={cn(
+                "flex-1 h-full min-h-0 bg-white overflow-hidden flex flex-col",
+                !selectedDoctorId ? "hidden md:flex" : "flex"
+            )}>
                 {selectedDoctor ? (
                     <ChatWindow
                         doctorId={selectedDoctor.id}
                         currentUserId={adminId}
                         recipientName={selectedDoctor.full_name}
                         isAdminView={true}
+                        onBack={() => setSelectedDoctorId(null)}
                     />
                 ) : (
                     <div className="h-full flex flex-col items-center justify-center text-slate-400 space-y-4 bg-slate-50/30">

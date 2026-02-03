@@ -15,15 +15,18 @@ import { useNotifications } from "@/hooks/use-notifications"
 import { useRouter } from "next/navigation"
 import { formatDistanceToNow } from "date-fns"
 import { es } from "date-fns/locale"
-import { useEffect } from "react"
+import { useEffect, useCallback } from "react"
+import { getCurrentDoctor } from "@/lib/actions/auth"
+import type { Doctor } from "@/lib/supabase/types"
 
 interface NotificationBellProps {
     doctorId?: string
+    recipientRole?: string
 }
 
-export function NotificationBell({ doctorId }: NotificationBellProps) {
+export function NotificationBell({ doctorId, recipientRole }: NotificationBellProps) {
     const [isMounted, setIsMounted] = useState(false)
-    const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications(doctorId)
+    const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications(doctorId, recipientRole)
     const [open, setOpen] = useState(false)
     const router = useRouter()
 
@@ -33,18 +36,26 @@ export function NotificationBell({ doctorId }: NotificationBellProps) {
 
     if (!doctorId || !isMounted) return <Button variant="ghost" size="icon" className="relative"><Bell className="h-5 w-5" /></Button>
 
-    const handleNotificationClick = async (notificationId: string, shiftId: string | null) => {
-        await markAsRead(notificationId)
+    const handleNotificationClick = async (notification: any) => {
+        await markAsRead(notification.id)
         setOpen(false)
-        if (shiftId) {
-            // Navigate to appropriate dashboard based on role (Admin or Doctor)
-            // Get role from doctor object (we might need to fetch it or use a prop if available, but NotificationBell only has doctorId)
-            // Wait, useNotifications doesn't give us the doctor role.
-            // But we can check the current pathname or pass it as a prop.
-            // Let's assume for now we can infer it or just use the current path if we are already in /admin or /dashboard.
+
+        if (notification.type === "new_chat_message") {
+            const isAdmin = recipientRole === "administrator" || window.location.pathname.startsWith('/admin')
+            if (isAdmin) {
+                const url = `/admin/messages${notification.doctor_id ? `?doctor=${notification.doctor_id}` : ''}`
+                router.push(url)
+            } else {
+                router.push("/dashboard/messages")
+            }
+            return
+        }
+
+        if (notification.shift_id) {
             const isInsideAdmin = window.location.pathname.startsWith('/admin')
-            const basePath = isInsideAdmin ? '/admin' : '/dashboard'
-            router.push(`${basePath}?shift=${shiftId}`)
+            const isHonorarios = window.location.pathname.startsWith('/honorarios')
+            const basePath = isInsideAdmin ? '/admin' : isHonorarios ? '/honorarios' : '/dashboard'
+            router.push(`${basePath}?shift=${notification.shift_id}`)
         }
     }
 
@@ -94,12 +105,13 @@ export function NotificationBell({ doctorId }: NotificationBellProps) {
                                 key={notification.id}
                                 className={`flex flex-col items-start gap-1 p-3 cursor-pointer ${!notification.read ? "bg-blue-50 hover:bg-blue-100" : ""
                                     }`}
-                                onClick={() => handleNotificationClick(notification.id, notification.shift_id)}
+                                onClick={() => handleNotificationClick(notification)}
                             >
                                 <div className="flex items-start justify-between w-full gap-2">
                                     <div className="flex-1">
                                         <p className="text-sm font-medium leading-tight">
                                             {notification.type === "free_shift_available" && "🆓 Nueva Guardia Libre"}
+                                            {notification.type === "new_chat_message" && "💬 Nuevo Mensaje"}
                                         </p>
                                         <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
                                             {notification.message}

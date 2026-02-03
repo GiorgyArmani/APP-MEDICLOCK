@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/client"
 import type { Notification } from "@/lib/supabase/types"
 import { playNotificationSound } from "@/lib/utils/notification-sound"
 
-export function useNotifications(doctorId?: string) {
+export function useNotifications(doctorId?: string, recipientRole?: string) {
     const [notifications, setNotifications] = useState<Notification[]>([])
     const [unreadCount, setUnreadCount] = useState(0)
     const [loading, setLoading] = useState(true)
@@ -21,12 +21,24 @@ export function useNotifications(doctorId?: string) {
 
         try {
             const supabase = createClient()
-            const { data, error } = await supabase
+            let query = supabase
                 .from("notifications")
                 .select("*")
-                .eq("doctor_id", doctorId)
                 .order("created_at", { ascending: false })
                 .limit(20)
+
+            if (doctorId && recipientRole) {
+                query = query.or(`doctor_id.eq.${doctorId},recipient_role.eq.${recipientRole}`)
+            } else if (doctorId) {
+                query = query.eq("doctor_id", doctorId)
+            } else if (recipientRole) {
+                query = query.eq("recipient_role", recipientRole)
+            } else {
+                setLoading(false)
+                return
+            }
+
+            const { data, error } = await query
 
             if (error) {
                 console.error("Error fetching notifications:", error)
@@ -136,7 +148,38 @@ export function useNotifications(doctorId?: string) {
         unreadCount,
         loading,
         markAsRead,
-        markAllAsRead,
+        markAllAsRead: async () => {
+            if (!doctorId && !recipientRole) return
+
+            try {
+                const supabase = createClient()
+                let query = supabase
+                    .from("notifications")
+                    .update({ read: true })
+                    .eq("read", false)
+
+                if (doctorId && recipientRole) {
+                    query = query.or(`doctor_id.eq.${doctorId},recipient_role.eq.${recipientRole}`)
+                } else if (doctorId) {
+                    query = query.eq("doctor_id", doctorId)
+                } else {
+                    query = query.eq("recipient_role", recipientRole)
+                }
+
+                const { error } = await query
+
+                if (error) {
+                    console.error("Error marking all as read:", error)
+                    return
+                }
+
+                // Update local state
+                setNotifications((prev) => prev.map((n) => ({ ...n, read: true })))
+                setUnreadCount(0)
+            } catch (error) {
+                console.error("Error in markAllAsRead:", error)
+            }
+        },
         refresh: fetchNotifications,
     }
 }

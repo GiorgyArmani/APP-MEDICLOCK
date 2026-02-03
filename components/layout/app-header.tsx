@@ -88,7 +88,7 @@ export function AppHeader({ doctor }: AppHeaderProps) {
                                     </Badge>
                                 </div>
                             </div>
-                            <NotificationBell doctorId={doctor.id} />
+                            <NotificationBell doctorId={doctor.id} recipientRole={doctor.role} />
                         </>
                     )}
                 </div>

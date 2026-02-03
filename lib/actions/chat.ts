@@ -54,7 +54,7 @@ export async function sendChatMessage(doctorId: string, senderId: string, conten
         await supabase.from("notifications").insert({
             type: "new_chat_message",
             message: `Nuevo mensaje de ${sender.full_name}: "${content.substring(0, 50)}${content.length > 50 ? "..." : ""}"`,
-            doctor_id: isFromAdmin ? doctorId : null,
+            doctor_id: doctorId, // This is the thread ID (the doctor involved)
             recipient_role: isFromAdmin ? null : "administrator",
             read: false
         })

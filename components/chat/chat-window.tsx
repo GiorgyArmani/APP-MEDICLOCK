@@ -6,7 +6,7 @@ import type { ChatMessage, Doctor } from "@/lib/supabase/types"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Send, User as UserIcon, Loader2 } from "lucide-react"
+import { Send, User as UserIcon, Loader2, ArrowLeft } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { getChatMessages, sendChatMessage, markChatAsRead } from "@/lib/actions/chat"
 
@@ -15,9 +15,10 @@ interface ChatWindowProps {
     currentUserId: string
     recipientName: string
     isAdminView?: boolean
+    onBack?: () => void
 }
 
-export function ChatWindow({ doctorId, currentUserId, recipientName, isAdminView = false }: ChatWindowProps) {
+export function ChatWindow({ doctorId, currentUserId, recipientName, isAdminView = false, onBack }: ChatWindowProps) {
     const [messages, setMessages] = useState<ChatMessage[]>([])
     const [newMessage, setNewMessage] = useState("")
     const [isLoading, setIsLoading] = useState(true)
@@ -94,6 +95,16 @@ export function ChatWindow({ doctorId, currentUserId, recipientName, isAdminView
         <div className="flex flex-col h-full bg-white overflow-hidden">
             {/* Header */}
             <div className="bg-slate-900 text-white p-4 flex items-center gap-3">
+                {onBack && (
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-white hover:bg-slate-800 -ml-2 md:hidden"
+                        onClick={onBack}
+                    >
+                        <ArrowLeft className="h-5 w-5" />
+                    </Button>
+                )}
                 <div className="h-10 w-10 rounded-full bg-slate-700 flex items-center justify-center">
                     <UserIcon className="h-6 w-6 text-slate-300" />
                 </div>
@@ -106,7 +117,7 @@ export function ChatWindow({ doctorId, currentUserId, recipientName, isAdminView
             </div>
 
             {/* Messages Area */}
-            <ScrollArea className="flex-1 p-4 bg-slate-50">
+            <ScrollArea className="flex-1 p-4 bg-slate-50 min-h-0">
                 {isLoading ? (
                     <div className="flex items-center justify-center h-full">
                         <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
