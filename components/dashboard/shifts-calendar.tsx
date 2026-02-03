@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { ShiftCard } from "./shift-card"
 import { AdminShiftCard } from "@/components/admin/admin-shift-card"
+import { ReadOnlyShiftCard } from "@/components/admin/read-only-shift-card"
 import { CalendarHeader } from "./calendar/calendar-header"
 import { MonthView } from "./calendar/month-view"
 import { WeekView } from "./calendar/week-view"
@@ -16,9 +17,10 @@ interface ShiftsCalendarProps {
   shifts: Shift[]
   doctors?: Doctor[] // Optional, only for admin view
   currentDoctor?: Doctor
+  readOnly?: boolean
 }
 
-export function ShiftsCalendar({ shifts, currentDoctor, ...props }: ShiftsCalendarProps) {
+export function ShiftsCalendar({ shifts, currentDoctor, readOnly = false, ...props }: ShiftsCalendarProps) {
   const [currentDate, setCurrentDate] = useState(new Date())
   const [view, setView] = useState<"month" | "week" | "day">("month")
 
@@ -161,7 +163,9 @@ export function ShiftsCalendar({ shifts, currentDoctor, ...props }: ShiftsCalend
           </DialogHeader>
           <div className="space-y-4 mt-4">
             {selectedShifts.map((shift) => (
-              props.doctors ? (
+              readOnly && props.doctors ? (
+                <ReadOnlyShiftCard key={shift.id} shift={shift} doctors={props.doctors} />
+              ) : props.doctors ? (
                 <AdminShiftCard key={shift.id} shift={shift} doctors={props.doctors} currentDoctor={currentDoctor} />
               ) : (
                 <ShiftCard key={shift.id} shift={shift} doctorId={currentDoctor?.id || selectedDoctorId} />

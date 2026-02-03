@@ -6,7 +6,7 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[]
 
-export type DoctorRole = "doctor" | "administrator"
+export type DoctorRole = "doctor" | "administrator" | "honorarios"
 export type ShiftStatus = "new" | "free" | "confirmed" | "rejected" | "free_pending"
 export type ShiftType = "assigned" | "free"
 

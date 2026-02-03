@@ -16,6 +16,8 @@ export function DashboardHeader({ doctor }: DashboardHeaderProps) {
     consultorio: "Consultorio",
     completo: "Completo",
     administrator: "Administrador",
+    honorarios: "Honorarios",
+    doctor: "Médico",
   }
 
   const handleLogout = async () => {

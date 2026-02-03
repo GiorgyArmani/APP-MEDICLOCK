@@ -15,17 +15,23 @@ import { useNotifications } from "@/hooks/use-notifications"
 import { useRouter } from "next/navigation"
 import { formatDistanceToNow } from "date-fns"
 import { es } from "date-fns/locale"
+import { useEffect } from "react"
 
 interface NotificationBellProps {
     doctorId?: string
 }
 
 export function NotificationBell({ doctorId }: NotificationBellProps) {
+    const [isMounted, setIsMounted] = useState(false)
     const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications(doctorId)
     const [open, setOpen] = useState(false)
     const router = useRouter()
 
-    if (!doctorId) return null
+    useEffect(() => {
+        setIsMounted(true)
+    }, [])
+
+    if (!doctorId || !isMounted) return <Button variant="ghost" size="icon" className="relative"><Bell className="h-5 w-5" /></Button>
 
     const handleNotificationClick = async (notificationId: string, shiftId: string | null) => {
         await markAsRead(notificationId)

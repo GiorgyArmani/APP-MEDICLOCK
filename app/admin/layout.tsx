@@ -17,7 +17,7 @@ export default async function AdminLayout({
     }
 
     if (doctor.role !== "administrator") {
-        redirect("/dashboard")
+        redirect(doctor.role === "honorarios" ? "/honorarios" : "/dashboard")
     }
 
     return (

@@ -10,6 +10,10 @@ export default async function HomePage() {
 
   if (doctor.role === "administrator") {
     redirect("/admin")
+  }
+
+  if (doctor.role === "honorarios") {
+    redirect("/honorarios")
   } else {
     redirect("/dashboard")
   }

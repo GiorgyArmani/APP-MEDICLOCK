@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation"
 import { signOut } from "@/lib/actions/auth"
 import type { Doctor } from "@/lib/supabase/types"
 import { Button } from "@/components/ui/button"
-import { Calendar, LayoutDashboard, Clock, Users, LogOut, Menu } from "lucide-react"
+import { Calendar, LayoutDashboard, Clock, Users, LogOut, Menu, FileText } from "lucide-react"
 import { useState } from "react"
 import { cn } from "@/lib/utils"
 import { ChevronLeft, ChevronRight } from "lucide-react"
@@ -19,6 +19,7 @@ export function AppSidebar({ doctor }: AppSidebarProps) {
     const pathname = usePathname()
     const { isCollapsed, setIsCollapsed, isMobileOpen, setIsMobileOpen } = useSidebar()
     const isAdmin = doctor.role === "administrator"
+    const isHonorarios = doctor.role === "honorarios"
 
     const navItems = isAdmin
         ? [
@@ -27,12 +28,18 @@ export function AppSidebar({ doctor }: AppSidebarProps) {
             { href: "/admin/my-shifts", label: "Mis Guardias", icon: Clock },
             { href: "/admin/doctors", label: "Médicos", icon: Users },
         ]
-        : [
-            { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-            { href: "/dashboard/calendar", label: "Calendario", icon: Calendar },
-            { href: "/dashboard/shifts", label: "Guardias", icon: Users },
-            { href: "/dashboard/availability", label: "Disponibilidad", icon: Clock },
-        ]
+        : isHonorarios
+            ? [
+                { href: "/honorarios", label: "Dashboard", icon: LayoutDashboard },
+                { href: "/honorarios/calendar", label: "Calendario", icon: Calendar },
+                { href: "/honorarios/reports", label: "Reportes", icon: FileText },
+            ]
+            : [
+                { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+                { href: "/dashboard/calendar", label: "Calendario", icon: Calendar },
+                { href: "/dashboard/shifts", label: "Guardias", icon: Users },
+                { href: "/dashboard/availability", label: "Disponibilidad", icon: Clock },
+            ]
 
     const handleLogout = async () => {
         await signOut()
@@ -40,26 +47,18 @@ export function AppSidebar({ doctor }: AppSidebarProps) {
 
     return (
         <>
-            {/* Mobile menu button */}
-            <button
-                onClick={() => setIsMobileOpen(!isMobileOpen)}
-                className="lg:hidden fixed top-4 left-4 z-50 p-2.5 bg-white rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 border border-slate-200"
-                aria-label="Toggle menu"
-            >
-                <Menu className="h-6 w-6 text-slate-900" />
-            </button>
 
             {/* Sidebar */}
             <aside
                 className={cn(
-                    "fixed left-0 top-0 h-full bg-slate-900 text-white flex flex-col transition-all duration-300 z-40",
+                    "fixed left-0 top-16 h-[calc(100%-4rem)] bg-slate-900 text-white flex flex-col transition-all duration-300 z-40 border-r border-slate-800",
                     isCollapsed ? "w-20" : "w-64",
                     isMobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
                 )}
             >
 
-                {/* Navigation - Offset by header height */}
-                <nav className="flex-1 p-4 pt-20 space-y-2">
+                {/* Navigation */}
+                <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
                     {navItems.map((item) => {
                         const Icon = item.icon
                         const isActive = pathname === item.href || pathname.startsWith(item.href + "/")

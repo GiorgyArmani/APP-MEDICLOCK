@@ -25,6 +25,26 @@ export async function getShifts(): Promise<Shift[]> {
   return shifts as Shift[]
 }
 
+/**
+ * Special fetcher for Honorarios role that uses the Admin client 
+ * to bypass RLS and ensure all data is visible for auditing.
+ */
+export async function getShiftsForHonorarios(): Promise<Shift[]> {
+  const adminSupabase = await getSupabaseAdminClient()
+
+  const { data: shifts, error } = await adminSupabase
+    .from("shifts")
+    .select("*")
+    .order("shift_date", { ascending: true })
+
+  if (error) {
+    console.error("Error fetching shifts for honorarios:", error)
+    return []
+  }
+
+  return shifts as Shift[]
+}
+
 export async function getShiftsByDoctor(doctorId: string): Promise<Shift[]> {
   const supabase = await getSupabaseServerClient()
 
@@ -662,6 +682,26 @@ export async function getDoctors(): Promise<Doctor[]> {
 
   if (error) {
     console.error("Error fetching doctors:", error)
+    return []
+  }
+
+  return doctors as Doctor[]
+}
+
+/**
+ * Special fetcher for Honorarios role that uses the Admin client
+ * to bypass RLS and ensure all doctors are visible for filtering.
+ */
+export async function getDoctorsForHonorarios(): Promise<Doctor[]> {
+  const adminSupabase = await getSupabaseAdminClient()
+
+  const { data: doctors, error } = await adminSupabase
+    .from("doctors")
+    .select("*")
+    .order("full_name", { ascending: true })
+
+  if (error) {
+    console.error("Error fetching doctors for honorarios:", error)
     return []
   }
 

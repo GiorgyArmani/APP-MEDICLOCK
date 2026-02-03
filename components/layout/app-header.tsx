@@ -15,18 +15,21 @@ interface AppHeaderProps {
 const roleLabels: Record<string, string> = {
     doctor: "Médico",
     administrator: "Administrador",
+    honorarios: "Honorarios",
 }
 
 export function AppHeader({ doctor }: AppHeaderProps) {
     const { isCollapsed, isMobileOpen, setIsMobileOpen } = useSidebar()
-    const dashboardLink = doctor?.role === "administrator" ? "/admin" : "/dashboard"
+    const dashboardLink = doctor?.role === "administrator"
+        ? "/admin"
+        : doctor?.role === "honorarios"
+            ? "/honorarios"
+            : "/dashboard"
 
     return (
         <header
             className={cn(
-                "fixed top-0 right-0 h-16 bg-slate-900 text-white border-b border-slate-800 z-50 transition-all duration-300",
-                "left-0",
-                isCollapsed ? "lg:left-20" : "lg:left-64"
+                "fixed top-0 left-0 right-0 h-16 bg-slate-900 text-white border-b border-slate-800 z-50 transition-all duration-300"
             )}
         >
             <div className="h-full px-4 flex items-center justify-between">

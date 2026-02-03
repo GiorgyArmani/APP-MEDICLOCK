@@ -5,7 +5,7 @@ import { AppHeader } from "@/components/layout/app-header"
 import { SidebarProvider } from "@/contexts/sidebar-context"
 import { SidebarLayoutContent } from "@/components/layout/sidebar-layout-content"
 
-export default async function DashboardLayout({
+export default async function HonorariosLayout({
     children,
 }: {
     children: React.ReactNode
@@ -16,12 +16,8 @@ export default async function DashboardLayout({
         redirect("/login")
     }
 
-    if (doctor.role === "administrator") {
-        redirect("/admin")
-    }
-
-    if (doctor.role === "honorarios") {
-        redirect("/honorarios")
+    if (doctor.role !== "honorarios") {
+        redirect(doctor.role === "administrator" ? "/admin" : "/dashboard")
     }
 
     return (
@@ -35,4 +31,3 @@ export default async function DashboardLayout({
         </SidebarProvider>
     )
 }
-
